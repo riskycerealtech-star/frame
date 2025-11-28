@@ -21,10 +21,10 @@ from config import settings
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Frame API",
+    title="Frame APIs",
     version="1.0.0",
     description="""
-    ## Frame API - Authentication & User Management
+    ## Frame APIs - Authentication & User Management
     
     A RESTful API for user registration, authentication, and management using JWT tokens.
     
@@ -51,7 +51,7 @@ app = FastAPI(
     You can configure this via the `ACCESS_TOKEN_EXPIRE_MINUTES` environment variable.
     """,
     contact={
-        "name": "Frame API Support",
+        "name": "Frame APIs Support",
         "email": "support@example.com",
     },
     license_info={
@@ -362,7 +362,7 @@ def read_users_me(current_user: User = Depends(get_current_user)):
             "content": {
                 "application/json": {
                     "example": {
-                        "message": "Welcome to Frame API"
+                        "message": "Welcome to Frame APIs"
                     }
                 }
             }
@@ -376,5 +376,5 @@ def root():
     Returns a welcome message confirming the API is running.
     No authentication required.
     """
-    return {"message": "Welcome to Frame API"}
+    return {"message": "Welcome to Frame APIs"}
 
