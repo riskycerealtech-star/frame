@@ -9,7 +9,7 @@ Your Personal Access Token doesn't have the `workflow` scope needed to push GitH
 ⚠️ **IMPORTANT**: Your token was visible in the git remote URL. Revoke it immediately:
 
 1. Go to: https://github.com/settings/tokens
-2. Find the token starting with `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`
+2. Find your old token (check your git remote URL or token list)
 3. Click "Revoke" to delete it
 
 ### 2. Create a New Token with Workflow Scope

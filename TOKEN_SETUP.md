@@ -1,7 +1,7 @@
 # GitHub Token Setup - Step by Step
 
 ## Current Status
-❌ Your token `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` **does NOT have the `workflow` scope**
+❌ Your current token **does NOT have the `workflow` scope**
 - We tested it and got: "refusing to allow a Personal Access Token to create or update workflow without `workflow` scope"
 
 ## Solution: Create a NEW Token

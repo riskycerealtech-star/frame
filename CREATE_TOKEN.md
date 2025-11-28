@@ -1,7 +1,7 @@
 # Create GitHub Token with Workflow Scope
 
 ## The Problem
-Your current token (`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`) doesn't have the `workflow` scope, which is required to push GitHub Actions workflow files.
+Your current token doesn't have the `workflow` scope, which is required to push GitHub Actions workflow files.
 
 ## Solution: Create a New Token
 
