@@ -39,3 +39,7 @@ dist/
 build/
 *.egg-info/
 
+# Cloud / Deployment
+.gcloudignore
+github-actions-key*.json
+

@@ -1,0 +1,75 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: frame-api
+  REGION: us-central1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write # Required for Workload Identity Federation
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Configure Docker for GCR
+      run: gcloud auth configure-docker
+
+    - name: Build and Push Docker image
+      run: |-
+        docker build -t gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA \
+          -t gcr.io/$PROJECT_ID/$SERVICE_NAME:latest .
+        docker push gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA
+        docker push gcr.io/$PROJECT_ID/$SERVICE_NAME:latest
+
+    - name: Deploy to Cloud Run
+      run: |-
+        gcloud run deploy $SERVICE_NAME \
+          --image gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA \
+          --platform managed \
+          --region $REGION \
+          --allow-unauthenticated \
+          --memory 512Mi \
+          --cpu 1 \
+          --timeout 300 \
+          --max-instances 10 \
+          --set-env-vars "SECRET_KEY=${{ secrets.SECRET_KEY }},DATABASE_URL=${{ secrets.DATABASE_URL }}"
+
+    - name: Get Service URL
+      id: get-url
+      run: |-
+        SERVICE_URL=$(gcloud run services describe $SERVICE_NAME \
+          --platform managed \
+          --region $REGION \
+          --format 'value(status.url)')
+        echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+        echo "🚀 Service deployed at: $SERVICE_URL"
+
+    - name: Output Service URL
+      run: |-
+        echo "✅ Deployment successful!"
+        echo "🌐 Service URL: ${{ steps.get-url.outputs.url }}"
+        echo "📚 API Docs: ${{ steps.get-url.outputs.url }}/docs"
+
