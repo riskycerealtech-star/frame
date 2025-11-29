@@ -1,0 +1,102 @@
+name: Deploy Backend to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'Backend/**'  # Only trigger when Backend files change
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+env:
+  PROJECT_ID: glass-backend-api
+  PROJECT_NUMBER: 750669515844
+  SERVICE_NAME: glass-api
+  REGION: us-central1
+  REPO_NAME: docker-repo
+  CONNECTION_NAME: glass-backend-api:us-central1:glass-db
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write # Required for Workload Identity Federation
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+    - name: Build Docker image
+      working-directory: ./Backend
+      run: |-
+        IMAGE_NAME="us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}"
+        docker build -t ${IMAGE_NAME}:${{ github.sha }} \
+          -t ${IMAGE_NAME}:latest .
+
+    - name: Push Docker image to Artifact Registry
+      working-directory: ./Backend
+      run: |-
+        IMAGE_NAME="us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}"
+        docker push ${IMAGE_NAME}:${{ github.sha }}
+        docker push ${IMAGE_NAME}:latest
+
+    - name: Deploy to Cloud Run
+      run: |-
+        IMAGE_NAME="us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}"
+        gcloud run deploy ${{ env.SERVICE_NAME }} \
+          --image ${IMAGE_NAME}:${{ github.sha }} \
+          --platform managed \
+          --region ${{ env.REGION }} \
+          --project ${{ env.PROJECT_ID }} \
+          --allow-unauthenticated \
+          --add-cloudsql-instances ${{ env.CONNECTION_NAME }} \
+          --set-env-vars "POSTGRES_SERVER=/cloudsql/${{ env.CONNECTION_NAME }}" \
+          --set-env-vars "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" \
+          --set-env-vars "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" \
+          --set-env-vars "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT_ID=${{ env.PROJECT_ID }}" \
+          --set-env-vars "SECRET_KEY=${{ secrets.SECRET_KEY }}" \
+          --set-env-vars "DEBUG=False" \
+          --set-env-vars "LOG_LEVEL=INFO" \
+          --memory 1Gi \
+          --cpu 1 \
+          --timeout 300 \
+          --max-instances 10 \
+          --min-instances 0 \
+          --port 8080 \
+          --quiet
+
+    - name: Get Service URL
+      id: get-url
+      run: |-
+        SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+          --platform managed \
+          --region ${{ env.REGION }} \
+          --project ${{ env.PROJECT_ID }} \
+          --format 'value(status.url)')
+        echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+        echo "🚀 Service deployed at: $SERVICE_URL"
+
+    - name: Output Service URL
+      run: |-
+        echo "✅ Deployment successful!"
+        echo "🌐 Service URL: ${{ steps.get-url.outputs.url }}"
+        echo "📚 API Docs: ${{ steps.get-url.outputs.url }}/docs"
+        echo "❤️  Health Check: ${{ steps.get-url.outputs.url }}/health"
+

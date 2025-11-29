@@ -385,7 +385,7 @@ async def root():
     
     Returns basic status information about the API.
     """
-    return {"message": "Sunglasses Detection API is running", "status": "healthy"}
+    return {"message": "Welcome to Frame Backend APIs", "status": "healthy"}
 
 @app.get("/health", tags=["1. Authentication"], include_in_schema=False)
 async def health_check():

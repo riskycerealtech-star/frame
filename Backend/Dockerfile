@@ -32,12 +32,6 @@ COPY . .
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD exec gunicorn -w 4 -k uvicorn.workers.UvicornWorker \
-    --bind "0.0.0.0:${PORT}" \
-    --timeout 120 \
-    --access-logfile - \
-    --error-logfile - \
-    --log-level info \
-    main:app
+# Run the application using uvicorn directly
+CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
 
