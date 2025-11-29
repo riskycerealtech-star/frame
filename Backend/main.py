@@ -80,14 +80,14 @@ except ImportError as e:
     settings = Settings()
 
 app = FastAPI(
-    title="Frame API Documentation",
-    description="Frame API - Comprehensive API for Frame marketplace operations",
+    title="Frame Backend APIs",
+    description="Frame Backend APIs - Comprehensive API for Frame marketplace operations",
     version="1.0.0",
     docs_url="/docs/frame/swagger-ui/index.html",
     redoc_url="/docs/frame/redoc/index.html",
     openapi_url="/docs/frame/openapi.json",
     contact={
-        "name": "Frame API Support",
+        "name": "Frame Backend APIs Support",
         "url": "https://frame.com",
     },
     tags_metadata=[
