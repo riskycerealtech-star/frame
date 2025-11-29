@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: glass-postgres-dev
+    environment:
+      POSTGRES_USER: glass_user
+      POSTGRES_PASSWORD: glass_local_password
+      POSTGRES_DB: glass_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glass_user -d glass_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - glass-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: glass-api-dev
+    environment:
+      POSTGRES_SERVER: postgres
+      POSTGRES_USER: glass_user
+      POSTGRES_PASSWORD: glass_local_password
+      POSTGRES_DB: glass_db
+      POSTGRES_PORT: 5432
+      SECRET_KEY: dev-secret-key-change-in-production
+      DEBUG: "True"
+      LOG_LEVEL: DEBUG
+      GOOGLE_CLOUD_PROJECT_ID: glass-backend-api
+    ports:
+      - "8000:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    networks:
+      - glass-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: glass-pgadmin-dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@glass.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - glass-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  glass-network:
+    driver: bridge
+
+
+

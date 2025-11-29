@@ -43,3 +43,10 @@ build/
 .gcloudignore
 github-actions-key*.json
 
+# Virtual environments
+venv/
+venv_test/
+env/
+*.pyc
+__pycache__/
+.env

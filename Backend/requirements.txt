@@ -1,0 +1,18 @@
+gunicorn==21.2.0
+google-cloud-vision==3.4.5
+Pillow==10.1.0
+fastapi==0.111.1
+uvicorn==0.27.0
+SQLAlchemy==2.0.22
+pydantic-settings==2.1.0
+email-validator==2.1.0
+pytz==2023.3
+requests==2.31.0
+python-multipart==0.0.9
+psycopg2-binary==2.9.9
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+# Optional ML dependencies
+# torch==2.2.0
+# torchvision==0.17.0
+# transformers==4.35.0

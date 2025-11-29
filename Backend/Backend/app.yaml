@@ -1,0 +1,30 @@
+runtime: python312
+env: standard
+
+automatic_scaling:
+  max_instances: 10
+
+# Environment variables
+# Note: PORT is automatically set by App Engine, don't include it here
+env_variables:
+  GOOGLE_CLOUD_PROJECT_ID: 'glass-backend-api'
+  # Database settings for Cloud SQL
+  POSTGRES_SERVER: '/cloudsql/glass-backend-api:us-central1:glass-db'
+  POSTGRES_USER: 'glass_user'
+  POSTGRES_DB: 'glass_db'
+  POSTGRES_PASSWORD: 'GlassUser2024Secure'
+  SECRET_KEY: 'your-secret-key-change-in-production-change-this'
+  DEBUG: 'False'
+  LOG_LEVEL: 'INFO'
+
+# Entry point - how to start the app
+entrypoint: gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind :$PORT
+
+service_account: "glass-backend-api@appspot.gserviceaccount.com"
+
+vpc_access_connector:
+  name: "projects/glass-backend-api/locations/us-central1/connectors/default"
+
+handlers:
+- url: /.*
+  script: auto
