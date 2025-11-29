@@ -24,6 +24,9 @@ app = FastAPI(
     title="Frame Backend APIs",
     version="1.0.0",
     description="Frame Backend APIs - Comprehensive API for Frame marketplace operations",
+    docs_url="/docs/frame/swagger-ui/index.html",
+    redoc_url="/docs/frame/redoc/index.html",
+    openapi_url="/docs/frame/openapi.json",
     contact={
         "name": "Frame APIs Support",
         "email": "support@example.com",
