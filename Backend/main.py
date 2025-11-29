@@ -81,7 +81,7 @@ except ImportError as e:
 
 app = FastAPI(
     title="Frame Backend APIs",
-    description="Frame Backend APIs - Comprehensive API for Frame marketplace operations - Testing GitHub Auto-Deployment",
+    description="Frame Backend APIs - Comprehensive API for Frame marketplace operations",
     version="1.0.0",
     docs_url="/docs/frame/swagger-ui/index.html",
     redoc_url="/docs/frame/redoc/index.html",

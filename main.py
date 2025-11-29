@@ -28,35 +28,18 @@ app = FastAPI(
     redoc_url="/docs/frame/redoc/index.html",
     openapi_url="/docs/frame/openapi.json",
     contact={
-        "name": "Frame APIs Support",
-        "email": "support@example.com",
-    },
-    license_info={
-        "name": "MIT",
+        "name": "Frame Backend APIs Support",
+        "url": "https://frame.com",
     },
     tags_metadata=[
         {
-            "name": "Authentication",
-            "description": "User authentication endpoints. Register new users and login to get JWT tokens.",
+            "name": "1. Authentication",
+            "description": "**User Authentication APIs** - Sign up, sign in, token management, and account updates. Includes endpoints for user registration, authentication, JWT token refresh, and profile management.",
         },
         {
-            "name": "Users",
-            "description": "User profile and information endpoints. Requires authentication.",
+            "name": "2. AI Validation",
+            "description": "**AI Validation APIs** - AI-powered image analysis using Google Cloud Vision API and Hugging Face models to detect and validate sunglasses in images. Supports multiple image formats and analysis methods.",
         },
-        {
-            "name": "General",
-            "description": "General API information endpoints.",
-        },
-    ],
-    servers=[
-        {
-            "url": "http://localhost:8000",
-            "description": "Development server"
-        },
-        {
-            "url": "https://your-cloud-run-url.run.app",
-            "description": "Production server (Cloud Run)"
-        }
     ],
 )
 
@@ -91,7 +74,7 @@ app.openapi = custom_openapi
     "/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
-    tags=["Authentication"],
+    tags=["1. Authentication"],
     summary="Register a new user",
     description="""
     Register a new user account with email, username, and password.
@@ -182,7 +165,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @app.post(
     "/login",
     response_model=Token,
-    tags=["Authentication"],
+    tags=["1. Authentication"],
     summary="Login and get access token",
     description="""
     Authenticate a user and receive a JWT access token.
@@ -263,7 +246,7 @@ def login(
 @app.get(
     "/me",
     response_model=UserResponse,
-    tags=["Users"],
+    tags=["1. Authentication"],
     summary="Get current user information",
     description="""
     Get the profile information of the currently authenticated user.
@@ -322,70 +305,29 @@ def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@app.get(
-    "/",
-    response_model=MessageResponse,
-    tags=["General"],
-    summary="API root endpoint",
-    description="""
-    Welcome endpoint that provides basic API information.
-    
-    This is a public endpoint that doesn't require authentication.
-    Use this to verify the API is running and accessible.
-    """,
-    responses={
-        200: {
-            "description": "API is running",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "message": "Welcome to Frame APIs"
-                    }
-                }
-            }
-        }
-    }
-)
-def root():
+@app.get("/", tags=["1. Authentication"], include_in_schema=False)
+async def root():
     """
-    Root endpoint - Welcome message.
+    **Root Endpoint**
     
-    Returns a welcome message confirming the API is running.
-    No authentication required.
+    Simple health check to verify the API is running.
+    
+    Returns basic status information about the API.
     """
     return {"message": "GitHub Auto-Deploy is Working! 🚀 - Test #2", "status": "healthy", "deployed_at": "2024-11-29"}
 
 
-@app.get(
-    "/health",
-    response_model=MessageResponse,
-    tags=["General"],
-    summary="Health check endpoint",
-    description="""
-    Health check endpoint to verify the API is running and healthy.
-    
-    This is a public endpoint that doesn't require authentication.
-    Use this for monitoring and health checks.
-    """,
-    responses={
-        200: {
-            "description": "API is healthy",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "message": "API is healthy"
-                    }
-                }
-            }
-        }
-    }
-)
-def health_check():
+@app.get("/health", tags=["1. Authentication"], include_in_schema=False)
+async def health_check():
     """
-    Health check endpoint.
+    **Health Check Endpoint**
     
-    Returns health status of the API.
-    No authentication required.
+    Detailed health information including:
+    - API status
+    - Vision API connection status
+    - API version
+    
+    Returns comprehensive health status for monitoring.
     """
     return {
         "status": "healthy",
@@ -394,4 +336,5 @@ def health_check():
         "deployment": "GitHub Auto-Deploy Working! ✅",
         "last_updated": "2024-11-29"
     }
+
 
