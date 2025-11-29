@@ -469,6 +469,7 @@ class UserSignupResponse(BaseModel):
     "/v1/user/signup", 
     response_model=UserSignupResponse, 
     tags=["1. Authentication"],
+    summary="Signup User",
     responses={
         200: {
             "description": "User successfully created",
