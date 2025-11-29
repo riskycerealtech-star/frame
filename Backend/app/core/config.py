@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     # API Settings
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "Frame Backend APIs"
+    PROJECT_NAME: str = "Frame Backend APIs - Deployment Working! ✅"
     VERSION: str = "1.0.0"
     DESCRIPTION: str = "Frame Backend APIs - AI-powered sunglasses detection and marketplace API"
     
