@@ -80,7 +80,7 @@ except ImportError as e:
     settings = Settings()
 
 app = FastAPI(
-    title="Frame Backend APIs - Deployment Working! ✅",
+    title="Frame Backend APIs",
     description="Frame Backend APIs - Comprehensive API for Frame marketplace operations - Testing GitHub Auto-Deployment",
     version="1.0.0",
     docs_url="/docs/frame/swagger-ui/index.html",
