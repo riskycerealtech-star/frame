@@ -44,5 +44,7 @@ async def health_check():
     return {
         "status": "healthy",
         "version": settings.VERSION,
-        "project": settings.PROJECT_NAME
+        "project": settings.PROJECT_NAME,
+        "deployment": "GitHub Auto-Deploy Working! ✅",
+        "last_updated": "2024-11-29"
     }

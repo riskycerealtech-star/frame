@@ -402,7 +402,9 @@ async def health_check():
     return {
         "status": "healthy",
         "vision_api": "connected" if vision_client else "mock_mode",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "deployment": "GitHub Auto-Deploy Working! ✅",
+        "last_updated": "2024-11-29"
     }
 
 
