@@ -378,3 +378,43 @@ def root():
     """
     return {"message": "GitHub Auto-Deploy is Working! 🚀 - Test #2", "status": "healthy", "deployed_at": "2024-11-29"}
 
+
+@app.get(
+    "/health",
+    response_model=MessageResponse,
+    tags=["General"],
+    summary="Health check endpoint",
+    description="""
+    Health check endpoint to verify the API is running and healthy.
+    
+    This is a public endpoint that doesn't require authentication.
+    Use this for monitoring and health checks.
+    """,
+    responses={
+        200: {
+            "description": "API is healthy",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "API is healthy"
+                    }
+                }
+            }
+        }
+    }
+)
+def health_check():
+    """
+    Health check endpoint.
+    
+    Returns health status of the API.
+    No authentication required.
+    """
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "project": "Frame Backend APIs",
+        "deployment": "GitHub Auto-Deploy Working! ✅",
+        "last_updated": "2024-11-29"
+    }
+
