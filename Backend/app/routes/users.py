@@ -4,8 +4,8 @@ User management endpoints
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from schemas.user import UserResponse, UserUpdate, UserSignupRequest, UserSignupResponse
-from services.user_service import UserService
+from app.schemas.user import UserResponse, UserUpdate, UserSignupRequest, UserSignupResponse
+from app.services.user_service import UserService
 from app.dependencies import get_current_user
 
 router = APIRouter()

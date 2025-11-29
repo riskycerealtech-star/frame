@@ -6,8 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import get_db
-from schemas.user import UserCreate, UserResponse, Token
-from services.user_service import UserService
+from app.schemas.user import UserCreate, UserResponse, Token
+from app.services.user_service import UserService
 from auth import create_access_token, verify_password, verify_token
 from app.dependencies import get_current_user
 from datetime import timedelta

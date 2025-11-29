@@ -34,6 +34,14 @@ app = FastAPI(
             "description": "**User Authentication APIs** - Sign up, sign in, token management, and account updates. Includes endpoints for user registration, authentication, JWT token refresh, and profile management.",
         },
         {
+            "name": "Products",
+            "description": "**Product Management APIs** - Create, read, update, and delete products. Manage product listings, categories, and inventory.",
+        },
+        {
+            "name": "Orders",
+            "description": "**Order Management APIs** - Create and manage orders. Track order status, payment, and fulfillment.",
+        },
+        {
             "name": "2. AI Validation",
             "description": "**AI Validation APIs** - AI-powered image analysis using Google Cloud Vision API and Hugging Face models to detect and validate sunglasses in images. Supports multiple image formats and analysis methods.",
         },

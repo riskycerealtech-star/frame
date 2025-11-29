@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
-from schemas.order import OrderResponse, OrderCreate, OrderUpdate
-from services.order_service import OrderService
+from app.schemas.order import OrderResponse, OrderCreate, OrderUpdate
+from app.services.order_service import OrderService
 from app.dependencies import get_current_user
 
 router = APIRouter()

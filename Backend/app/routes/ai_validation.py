@@ -4,8 +4,8 @@ AI validation endpoints for sunglasses detection
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database import get_db
-from services.ai_validation_service import AIValidationService
-from schemas.ai_validation import ValidationRequest, ValidationResponse
+from app.services.ai_validation_service import AIValidationService
+from app.schemas.ai_validation import ValidationRequest, ValidationResponse
 
 router = APIRouter()
 
