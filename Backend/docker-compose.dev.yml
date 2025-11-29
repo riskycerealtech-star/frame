@@ -38,7 +38,7 @@ services:
       LOG_LEVEL: DEBUG
       GOOGLE_CLOUD_PROJECT_ID: glass-backend-api
     ports:
-      - "8000:8080"
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy

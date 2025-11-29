@@ -35,7 +35,7 @@ local-up: ## Start local development environment
 	@echo "$(BLUE)🚀 Starting local development environment...$(NC)"
 	docker-compose -f docker-compose.dev.yml up -d
 	@echo "$(GREEN)✅ Local environment started!$(NC)"
-	@echo "$(BLUE)📊 API: http://localhost:8000$(NC)"
+	@echo "$(BLUE)📊 API: http://localhost:8080$(NC)"
 	@echo "$(BLUE)📊 PgAdmin: http://localhost:5050$(NC)"
 
 local-down: ## Stop local development environment
@@ -92,7 +92,7 @@ check: ## Check deployment health
 
 dev: ## Start development server
 	@echo "$(BLUE)🚀 Starting development server...$(NC)"
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 
 migrate: ## Run database migrations
 	@echo "$(BLUE)📦 Running migrations...$(NC)"
