@@ -385,7 +385,7 @@ async def root():
     
     Returns basic status information about the API.
     """
-    return {"message": "Welcome to Frame Backend APIs", "status": "healthy"}
+    return {"message": "TEST - GitHub Auto-Deploy Working! 🚀", "status": "healthy"}
 
 @app.get("/health", tags=["1. Authentication"], include_in_schema=False)
 async def health_check():
