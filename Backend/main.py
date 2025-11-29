@@ -385,7 +385,7 @@ async def root():
     
     Returns basic status information about the API.
     """
-    return {"message": "GitHub Auto-Deploy is Working! 🚀 - Updated", "status": "healthy"}
+    return {"message": "GitHub Auto-Deploy is Working! 🚀 - Test #2", "status": "healthy", "deployed_at": "2024-11-29"}
 
 @app.get("/health", tags=["1. Authentication"], include_in_schema=False)
 async def health_check():
