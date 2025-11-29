@@ -23,33 +23,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Frame Backend APIs",
     version="1.0.0",
-    description="""
-    ## Frame APIs - Authentication & User Management
-    
-    A RESTful API for user registration, authentication, and management using JWT tokens.
-    
-    ### Features
-    
-    * 🔐 **User Registration** - Create new user accounts
-    * 🔑 **JWT Authentication** - Secure token-based authentication
-    * 👤 **User Profile** - Get current user information
-    * 📚 **OpenAPI Documentation** - Interactive API documentation
-    
-    ### Authentication
-    
-    Most endpoints require authentication using JWT Bearer tokens. 
-    To authenticate, use the `/login` endpoint to get an access token, 
-    then include it in the `Authorization` header:
-    
-    ```
-    Authorization: Bearer <your-access-token>
-    ```
-    
-    ### Token Expiration
-    
-    Access tokens expire after 30 minutes by default. 
-    You can configure this via the `ACCESS_TOKEN_EXPIRE_MINUTES` environment variable.
-    """,
+    description="Frame Backend APIs - Comprehensive API for Frame marketplace operations",
     contact={
         "name": "Frame APIs Support",
         "email": "support@example.com",
