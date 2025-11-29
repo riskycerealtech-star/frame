@@ -80,8 +80,8 @@ except ImportError as e:
     settings = Settings()
 
 app = FastAPI(
-    title="Frame Backend APIs",
-    description="Frame Backend APIs - Comprehensive API for Frame marketplace operations",
+    title="Frame Backend APIs - Auto-Deploy Test",
+    description="Frame Backend APIs - Comprehensive API for Frame marketplace operations - Testing GitHub Auto-Deployment",
     version="1.0.0",
     docs_url="/docs/frame/swagger-ui/index.html",
     redoc_url="/docs/frame/redoc/index.html",
@@ -385,7 +385,7 @@ async def root():
     
     Returns basic status information about the API.
     """
-    return {"message": "TEST - GitHub Auto-Deploy Working! 🚀", "status": "healthy"}
+    return {"message": "GitHub Auto-Deploy is Working! 🚀 - Updated", "status": "healthy"}
 
 @app.get("/health", tags=["1. Authentication"], include_in_schema=False)
 async def health_check():

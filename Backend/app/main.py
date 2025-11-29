@@ -32,7 +32,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 async def root():
     """Root endpoint"""
     return {
-        "message": "TEST - GitHub Auto-Deploy Working! 🚀",
+        "message": "GitHub Auto-Deploy is Working! 🚀 - Updated",
         "version": settings.VERSION,
         "docs": f"{settings.API_V1_STR}/docs"
     }
