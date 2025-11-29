@@ -12,7 +12,7 @@ on:
 env:
   PROJECT_ID: glass-backend-api
   PROJECT_NUMBER: 750669515844
-  SERVICE_NAME: glass-api
+  SERVICE_NAME: frame
   REGION: us-central1
   REPO_NAME: docker-repo
   CONNECTION_NAME: glass-backend-api:us-central1:glass-db
