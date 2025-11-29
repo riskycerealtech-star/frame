@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Frame Backend APIs"
     VERSION: str = "1.0.0"
-    DESCRIPTION: str = "Frame Backend APIs - AI-powered sunglasses detection and marketplace API"
+    DESCRIPTION: str = "Comprehensive API for Frame marketplace operations"
     
     # Database Settings
     DATABASE_URL: Optional[str] = "postgresql://postgres:password@localhost:5432/sunglass_db"
