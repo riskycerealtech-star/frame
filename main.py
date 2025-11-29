@@ -21,7 +21,7 @@ from config import settings
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Frame APIs",
+    title="Frame Backend APIs - Deployment Working! ✅",
     version="1.0.0",
     description="""
     ## Frame APIs - Authentication & User Management
@@ -376,5 +376,5 @@ def root():
     Returns a welcome message confirming the API is running.
     No authentication required.
     """
-    return {"message": "Welcome to Frame APIs"}
+    return {"message": "GitHub Auto-Deploy is Working! 🚀 - Test #2", "status": "healthy", "deployed_at": "2024-11-29"}
 
