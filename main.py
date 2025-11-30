@@ -29,8 +29,8 @@ app = FastAPI(
     },
     tags_metadata=[
         {
-            "name": "1. Authentication",
-            "description": "**User Authentication APIs** - Sign up, sign in, token management, and account updates. Includes endpoints for user registration, authentication, JWT token refresh, and profile management.",
+            "name": "User Signup",
+            "description": "**User Signup & Auth APIs** - Sign up, sign in, token management, and account updates. Includes endpoints for user registration, authentication, JWT token refresh, and profile management.",
         },
         {
             "name": "2. AI Validation",
@@ -54,6 +54,6 @@ setup_openapi_schema(app)
 # Register routers
 from routes import auth, users, health
 
-app.include_router(auth.router, prefix="/v1/auth", tags=["1. Authentication"])
-app.include_router(users.router, prefix="/v1/auth", tags=["1. Authentication"])
-app.include_router(health.router, tags=["1. Authentication"])
+app.include_router(auth.router, prefix="/v1/auth", tags=["User Signup"])
+app.include_router(users.router, prefix="/v1/auth", tags=["User Signup"])
+app.include_router(health.router, tags=["User Signup"])

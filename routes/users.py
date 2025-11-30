@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get(
     "/status/{phoneNumber}",
     response_model=UserResponse,
-    tags=["1. Authentication"],
+    tags=["User Signup"],
     summary="Get user by phone number",
     description="""
     Fetch a user's profile by phone number.
@@ -37,7 +37,7 @@ async def get_user_status_by_phone(
 
 @router.delete(
     "/me",
-    tags=["1. Authentication"],
+    tags=["User Signup"],
     summary="Delete Current User",
     description="""
     Delete the currently authenticated user's account.
