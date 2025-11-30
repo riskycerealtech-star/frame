@@ -20,7 +20,7 @@ router = APIRouter()
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["1. Authentication"],
-    summary="Register a new user",
+    summary="Create new account",
     description="""
     Register a new user account with email, username, and password.
     
