@@ -54,6 +54,6 @@ setup_openapi_schema(app)
 # Register routers
 from routes import auth, users, health
 
-app.include_router(auth.router, prefix="/api/v1", tags=["1. Authentication"])
-app.include_router(users.router, prefix="/api/v1", tags=["1. Authentication"])
+app.include_router(auth.router, prefix="/v1", tags=["1. Authentication"])
+app.include_router(users.router, prefix="/v1", tags=["1. Authentication"])
 app.include_router(health.router, tags=["1. Authentication"])
