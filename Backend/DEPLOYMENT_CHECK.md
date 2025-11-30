@@ -99,3 +99,4 @@ open https://frame-750669515844.us-central1.run.app/docs/frame/swagger-ui/index.
 
 
 
+\nCI trigger: 2025-11-30T20:14:22Z
