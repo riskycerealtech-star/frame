@@ -6,6 +6,17 @@ from fastapi import APIRouter, Body, status
 router = APIRouter()
 
 
+@router.get(
+    "",
+    tags=["2. Frame Validation"],
+    summary="List frames",
+    status_code=status.HTTP_200_OK,
+)
+async def list_frames():
+    """Return a placeholder list of frames (for demonstration)."""
+    return {"items": [], "count": 0}
+
+
 @router.post(
     "/register",
     tags=["2. Frame Validation"],
