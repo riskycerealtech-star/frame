@@ -12,6 +12,7 @@ from middleware.error_handler import (
 )
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from docs.openapi import setup_openapi_schema
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -25,7 +26,7 @@ app = FastAPI(
     redoc_url="/docs/frame/redoc/index.html",
     openapi_url="/docs/frame/openapi.json",
     contact={
-        "name": "Frame Backend APIs Support",
+        "name": "Frame API Support",
         "url": "https://frame.com",
     },
     tags_metadata=[
@@ -62,6 +63,9 @@ if settings.BACKEND_CORS_ORIGINS:
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
+
+# Setup custom OpenAPI schema (for consistent Swagger UI)
+setup_openapi_schema(app)
 
 # Import and include routers from app.routes
 from app.routes import users, products, orders, auth, ai_validation
