@@ -33,5 +33,6 @@ COPY . .
 EXPOSE 8080
 
 # Run the application using uvicorn directly
-CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
+# Use app.main:app to directly reference the FastAPI app in app/main.py
+CMD exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}
 

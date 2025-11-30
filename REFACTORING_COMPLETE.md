@@ -76,3 +76,5 @@ The structure is now ready for:
 - Adding controllers in `controllers/` if needed
 - Easy testing and maintenance
 
+
+

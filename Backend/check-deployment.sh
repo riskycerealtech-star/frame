@@ -63,3 +63,5 @@ else
     echo -e "${RED}❌ Could not test endpoint${NC}"
 fi
 
+
+
