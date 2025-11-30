@@ -34,3 +34,25 @@ async def get_user_status_by_phone(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
 
+
+@router.delete(
+    "/user/{user_id}",
+    tags=["1. User Signup"],
+    summary="Delete user by id",
+    description="""
+    Permanently delete a user account by its id.
+    Returns 404 if the user does not exist.
+    """,
+    status_code=status.HTTP_200_OK,
+)
+async def delete_user_by_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    db.delete(db_user)
+    db.commit()
+    return {"status": "success", "message": "User deleted", "deleted_user_id": user_id}
+
