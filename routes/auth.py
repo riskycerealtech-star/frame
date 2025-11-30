@@ -19,7 +19,7 @@ router = APIRouter()
     "/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
-    tags=["User Signup"],
+    tags=["1. User Signup"],
     summary="Create new account",
     description="""
     Register a new user account with email, username, and password.
@@ -49,7 +49,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @router.post(
     "/login",
     response_model=Token,
-    tags=["User Signup"],
+    tags=["1. User Signup"],
     summary="Login and get access token",
     description="""
     Authenticate a user and receive a JWT access token.
@@ -97,7 +97,7 @@ async def login(
 @router.get(
     "/status/{email}",
     response_model=UserResponse,
-    tags=["User Signup"],
+    tags=["1. User Signup"],
     summary="Get user by email",
     description="""
     Fetch a user's profile by email.
