@@ -12,7 +12,7 @@ from middleware.error_handler import (
 )
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from docs.openapi import setup_openapi_schema
+from app.docs.openapi import setup_openapi_schema
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
