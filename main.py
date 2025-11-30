@@ -33,8 +33,8 @@ app = FastAPI(
             "description": "**User Signup & Auth APIs** - Sign up, sign in, token management, and account updates. Includes endpoints for user registration, authentication, JWT token refresh, and profile management.",
         },
         {
-            "name": "2. AI Validation",
-            "description": "**AI Validation APIs** - AI-powered image analysis using Google Cloud Vision API and Hugging Face models to detect and validate sunglasses in images. Supports multiple image formats and analysis methods.",
+            "name": "2. Frame Validation",
+            "description": "**Frame Validation APIs** - Submit frame data or images for validation and receive status/results.",
         },
     ],
 )
@@ -52,8 +52,9 @@ app.add_middleware(
 setup_openapi_schema(app)
 
 # Register routers
-from routes import auth, users, health
+from routes import auth, users, health, frame
 
 app.include_router(auth.router, prefix="/v1/auth", tags=["1. User Signup"])
 app.include_router(users.router, prefix="/v1/auth", tags=["1. User Signup"])
+app.include_router(frame.router, prefix="/v1/frame", tags=["2. Frame Validation"])
 app.include_router(health.router, tags=["1. User Signup"])
