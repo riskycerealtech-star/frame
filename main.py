@@ -17,7 +17,7 @@ init_db()
 
 # Create FastAPI application
 app = FastAPI(
-    title="Frame API Documentation",
+    title="Frame APIs Documentation",
     version="1.0.0",
     description="Comprehensive APIs for Frame marketplace operations",
     docs_url="/docs/frame/swagger-ui/index.html",
