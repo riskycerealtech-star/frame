@@ -9,7 +9,7 @@ from datetime import timedelta
 from database import get_db
 from schemas import UserCreate, UserResponse, Token
 from services.user_service import UserService
-from auth import authenticate_user, create_access_token
+from auth import authenticate_user, create_access_token, get_user_by_email
 from config import settings
 
 router = APIRouter()
@@ -92,4 +92,22 @@ async def login(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get(
+    "/auth/status/{email}",
+    response_model=UserResponse,
+    tags=["1. Authentication"],
+    summary="Get user by email",
+    description="""
+    Fetch a user's profile by email.
+
+    Returns 404 if no user is found.
+    """,
+)
+async def get_user_by_email_status(email: str, db: Session = Depends(get_db)):
+    user = get_user_by_email(db, email=email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
 
