@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get(
-    "/status/{phoneNumber}",
+    "/status/phone/{phoneNumber}",
     response_model=UserResponse,
     tags=["1. User Signup"],
     summary="Get user by phone number",

@@ -95,7 +95,7 @@ async def login(
 
 
 @router.get(
-    "/status/{email}",
+    "/status/email/{email}",
     response_model=UserResponse,
     tags=["1. User Signup"],
     summary="Get user by email",
