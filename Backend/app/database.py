@@ -1,11 +1,11 @@
 """
-Database engine, connections, ORM setup
+Database session management
 """
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from app.config import settings
+from app.core.config import settings
 
 # Support Cloud SQL Unix socket connections
 # If POSTGRES_SERVER starts with /cloudsql/, use Unix socket connection
@@ -31,7 +31,7 @@ engine = create_engine(
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base class for models
+# Create base class for models
 Base = declarative_base()
 
 

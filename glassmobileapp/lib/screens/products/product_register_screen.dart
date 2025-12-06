@@ -25,8 +25,8 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
   bool _isLowConfidenceRejection = false;
   DateTime? _selectedDate;
   String _description = '';
-  // Fixed commission of $10.00
-  static const double _commissionAmount = 10.00;
+  // Commission rate of 5%
+  static const double _commissionPercent = 0.05;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,6 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
               height: 40,
               margin: EdgeInsets.only(left: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFD93211),
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -179,7 +178,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: 'Flame Color ',
+                          text: 'Flame Designer ',
                           style: TextStyle(
                             fontSize: isTablet ? 16.0 : 14.0,
                             fontWeight: FontWeight.w600,
@@ -203,7 +202,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                   // Input Field
                   TextFormField(
                     decoration: InputDecoration(
-                      hintText: 'Enter flame color',
+                      hintText: 'Enter flame designer',
                       hintStyle: TextStyle(
                         fontSize: isTablet ? 14.0 : 12.0,
                         color: AppColors.textSecondary,
@@ -253,7 +252,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: 'Bought Date ',
+                          text: 'Flame Bland ',
                           style: TextStyle(
                             fontSize: isTablet ? 16.0 : 14.0,
                             fontWeight: FontWeight.w600,
@@ -277,13 +276,9 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                   // Input Field
                   TextFormField(
                     decoration: InputDecoration(
-                      hintText: 'dd/mm/yyyy',
+                      hintText: 'Enter flame bland',
                       hintStyle: TextStyle(
                         fontSize: isTablet ? 14.0 : 12.0,
-                        color: AppColors.textSecondary,
-                      ),
-                      suffixIcon: Icon(
-                        Icons.calendar_today,
                         color: AppColors.textSecondary,
                       ),
                       border: OutlineInputBorder(
@@ -316,214 +311,156 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                       fontSize: isTablet ? 14.0 : 12.0,
                       color: AppColors.textPrimary,
                     ),
-                    readOnly: true,
-                    controller: TextEditingController(
-                      text: _selectedDate != null 
-                          ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
-                          : '',
-                    ),
-                    onTap: () async {
-                      final DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime.now(),
-                      );
-                      if (pickedDate != null) {
-                        setState(() {
-                          _selectedDate = pickedDate;
-                        });
-                      }
-                    },
                   ),
                 ],
               ),
               
               SizedBox(height: isTablet ? 24.0 : 16.0),
               
-              // Price Input Fields (Amount and Quantity)
-              Row(
+              // Flame Color Input Field (replacing price fields)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Amount Field
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // Label
+                  RichText(
+                    text: TextSpan(
                       children: [
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'Bought Price ',
-                                style: TextStyle(
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              TextSpan(
-                                text: '*',
-                                style: TextStyle(
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.red,
-              ),
-            ),
-          ],
-        ),
-      ),
-                        SizedBox(height: isTablet ? 12.0 : 8.0),
-                        TextFormField(
-                          decoration: InputDecoration(
-                            hintText: '0.00',
-                            hintStyle: TextStyle(
-                              fontSize: isTablet ? 14.0 : 12.0,
-                              color: AppColors.textSecondary,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: AppColors.border,
-                                width: 1,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: AppColors.border,
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: AppColors.primary,
-                                width: 2,
-                              ),
-                            ),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: isTablet ? 16.0 : 12.0,
-                              vertical: isTablet ? 16.0 : 12.0,
-                            ),
-                          ),
+                        TextSpan(
+                          text: 'Flame Color ',
                           style: TextStyle(
-                            fontSize: isTablet ? 14.0 : 12.0,
+                            fontSize: isTablet ? 16.0 : 14.0,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '*',
+                          style: TextStyle(
+                            fontSize: isTablet ? 16.0 : 14.0,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.red,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  
-                  SizedBox(width: isTablet ? 16.0 : 12.0),
-                  
-                  // Quantity Field
-                  Expanded(
-                    flex: 1,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                          'Price',
-                style: TextStyle(
+                  SizedBox(height: isTablet ? 12.0 : 8.0),
+                  // Input Field
+                  TextFormField(
+                    decoration: InputDecoration(
+                      hintText: 'Enter flame color',
+                      hintStyle: TextStyle(
+                        fontSize: isTablet ? 14.0 : 12.0,
+                        color: AppColors.textSecondary,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppColors.border,
+                          width: 1,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppColors.border,
+                          width: 1,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 16.0 : 12.0,
+                        vertical: isTablet ? 16.0 : 12.0,
+                      ),
+                    ),
+                    style: TextStyle(
+                      fontSize: isTablet ? 14.0 : 12.0,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              
+              SizedBox(height: isTablet ? 24.0 : 16.0),
+              
+              // Price Input Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Label
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Flame Price ',
+                          style: TextStyle(
                             fontSize: isTablet ? 16.0 : 14.0,
                             fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-                        ),
-                        SizedBox(height: isTablet ? 12.0 : 8.0),
-                        TextFormField(
-                          decoration: InputDecoration(
-                            hintText: '1',
-                            hintStyle: TextStyle(
-                              fontSize: isTablet ? 14.0 : 12.0,
-                              color: AppColors.textSecondary,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: AppColors.border,
-                                width: 1,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: AppColors.border,
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: AppColors.primary,
-                                width: 2,
-                              ),
-                            ),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: isTablet ? 16.0 : 12.0,
-                              vertical: isTablet ? 16.0 : 12.0,
-                            ),
-                          ),
-                          style: TextStyle(
-                            fontSize: isTablet ? 14.0 : 12.0,
                             color: AppColors.textPrimary,
                           ),
                         ),
+                        TextSpan(
+                          text: '*',
+                          style: TextStyle(
+                            fontSize: isTablet ? 16.0 : 14.0,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.red,
+                          ),
+                        ),
                       ],
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 12.0 : 8.0),
+                  // Input Field
+                  TextFormField(
+                    decoration: InputDecoration(
+                      hintText: 'Enter price',
+                      hintStyle: TextStyle(
+                        fontSize: isTablet ? 14.0 : 12.0,
+                        color: AppColors.textSecondary,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppColors.border,
+                          width: 1,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppColors.border,
+                          width: 1,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 16.0 : 12.0,
+                        vertical: isTablet ? 16.0 : 12.0,
+                      ),
+                    ),
+                    style: TextStyle(
+                      fontSize: isTablet ? 14.0 : 12.0,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
               ),
               
               SizedBox(height: isTablet ? 16.0 : 12.0),
-              
-              // Commission Status
-              Container(
-                padding: EdgeInsets.all(isTablet ? 16.0 : 12.0),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.monetization_on,
-                      color: AppColors.primary,
-                      size: isTablet ? 20.0 : 18.0,
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Commission',
-                            style: TextStyle(
-                              fontSize: isTablet ? 14.0 : 12.0,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '\$${_commissionAmount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: isTablet ? 12.0 : 10.0,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: isTablet ? 16.0 : 12.0),
+            
 
               // Description Link
               Align(
@@ -799,7 +736,54 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                   ),
                 ),
               ),
+
+              SizedBox(height: isTablet ? 16.0 : 12.0),
               
+              // Commission Status
+              Container(
+                padding: EdgeInsets.all(isTablet ? 16.0 : 12.0),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.monetization_on,
+                      color: AppColors.primary,
+                      size: isTablet ? 20.0 : 18.0,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Commission',
+                            style: TextStyle(
+                              fontSize: isTablet ? 14.0 : 12.0,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '5%',
+                            style: TextStyle(
+                              fontSize: isTablet ? 12.0 : 10.0,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               
               SizedBox(height: isTablet ? 24.0 : 16.0),
             ],
@@ -1087,7 +1071,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
     }
 
     print('✅ SUBMIT VALIDATION - Image path: $_selectedImagePath');
-    print('✅ COMMISSION - Fixed: \$${_commissionAmount.toStringAsFixed(2)}');
+    print('✅ COMMISSION - Rate: 5%');
     print('🚀 SUBMIT PROCESS - Starting AI validation...');
     
     // Start AI validation
@@ -1292,13 +1276,13 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
   /// Returns the appropriate submit button color based on state
   Color _getSubmitButtonColor() {
     if (_isLoading || _isValidating) {
-      return AppColors.primary.withOpacity(0.6);
+      return AppColors.darkGreen.withOpacity(0.6);
     } else if (_lastValidationResult != null && _lastValidationResult!.isAccepted && _lastValidationResult!.confidence >= 0.7) {
-      return Color(0xFF1E884A);
+      return AppColors.darkGreen;
     } else if (_lastValidationResult != null && (!_lastValidationResult!.isAccepted || _lastValidationResult!.confidence < 0.7)) {
       return Colors.grey;
     } else {
-      return AppColors.primary;
+      return AppColors.darkGreen;
     }
   }
 

@@ -5,11 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from app.database import get_db
+from app.db.session import get_db
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.services.user_service import UserService
-from auth import create_access_token, verify_password, verify_token
-from app.dependencies import get_current_user
+from app.core.security import create_access_token, verify_password
+from app.api.v1.dependencies import get_current_user
 from datetime import timedelta
 
 
@@ -77,9 +77,10 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
 
-def get_current_user_local(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Get current authenticated user (local function)"""
-    from services.user_service import UserService
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Get current authenticated user"""
+    from app.core.security import verify_token
+    from app.services.user_service import UserService
     
     user_id = verify_token(token)
     if user_id is None:

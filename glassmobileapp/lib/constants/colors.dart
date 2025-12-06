@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Main app color
-  static const Color primary = Color(0xFF24577c);
+  static const Color primary = Color(0xFF000000);
+  // Submit button color
+  static const Color darkGreen = Color(0xFF1E884A);
   
   // Color variations based on main color
   static const Color primaryLight = Color(0xFF4a7a9a);

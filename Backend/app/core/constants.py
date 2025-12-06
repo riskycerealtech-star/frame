@@ -7,7 +7,7 @@ Contains base URLs and API endpoints
 API_BASE_URL = "https://glass-api-750669515844.us-central1.run.app"
 
 # API Base URL - Local Development
-API_BASE_URL_LOCAL = "http://localhost:8080"
+API_BASE_URL_LOCAL = "http://localhost:8000"
 
 # API Version Prefix
 API_V1_PREFIX = "/v1"

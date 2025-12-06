@@ -4,10 +4,10 @@ Order management endpoints
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from app.database import get_db
+from app.db.session import get_db
 from app.schemas.order import OrderResponse, OrderCreate, OrderUpdate
 from app.services.order_service import OrderService
-from app.dependencies import get_current_user
+from app.api.v1.dependencies import get_current_user
 
 router = APIRouter()
 

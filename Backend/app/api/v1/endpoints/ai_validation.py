@@ -10,7 +10,7 @@ from app.schemas.ai_validation import ValidationRequest, ValidationResponse
 router = APIRouter()
 
 
-@router.post("/validate-sunglasses", response_model=ValidationResponse)
+@router.post("/validate-sunglasses", response_model=ValidationResponse, tags=["2. Publish Flame"])
 async def validate_sunglasses(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
@@ -45,7 +45,7 @@ async def validate_sunglasses(
         )
 
 
-@router.post("/validate-sunglasses-base64", response_model=ValidationResponse)
+@router.post("/validate-sunglasses-base64", response_model=ValidationResponse, tags=["2. Publish Flame"])
 async def validate_sunglasses_base64(
     request: ValidationRequest,
     db: Session = Depends(get_db)
