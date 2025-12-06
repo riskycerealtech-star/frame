@@ -21,7 +21,7 @@ from config import settings
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Frame API",
+    title="Flame APIs",
     version="1.0.0",
     description="",
     contact={
