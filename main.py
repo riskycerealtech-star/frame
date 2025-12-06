@@ -33,7 +33,7 @@ app = FastAPI(
     },
     tags_metadata=[
         {
-            "name": "Authentication",
+            "name": "1. Authentication",
             "description": "User authentication endpoints. Register new users and login to get JWT tokens.",
         },
 
@@ -89,7 +89,7 @@ app.openapi = custom_openapi
     "/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
-    tags=["Authentication"],
+    tags=["1. Authentication"],
     summary="Register a new user",
     description="""
     Register a new user account with email, username, and password.
@@ -180,7 +180,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @app.post(
     "/login",
     response_model=Token,
-    tags=["Authentication"],
+    tags=["1. Authentication"],
     summary="Login and get access token",
     description="""
     Authenticate a user and receive a JWT access token.
