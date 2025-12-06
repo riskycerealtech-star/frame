@@ -38,8 +38,8 @@ app = FastAPI(
         },
 
         {
-            "name": "Users",
-            "description": "User profile and information endpoints. Requires authentication.",
+            "name": "2. Flame Flow",
+            "description": "Flame flow endpoints and user-related operations. Requires authentication.",
         },
         {
             "name": "General",
@@ -261,7 +261,7 @@ def login(
 @app.get(
     "/me",
     response_model=UserResponse,
-    tags=["Users"],
+    tags=["2. Flame Flow"],
     summary="Get current user information",
     description="""
     Get the profile information of the currently authenticated user.
