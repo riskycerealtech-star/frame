@@ -24,10 +24,6 @@ app = FastAPI(
     docs_url="/docs/frame/swagger-ui/index.html",
     redoc_url="/docs/frame/redoc/index.html",
     openapi_url="/docs/frame/openapi.json",
-    contact={
-        "name": "Flame API Support",
-        "url": "https://flame.com",
-    },
     tags_metadata=[
         {
             "name": "1. User Signup",
