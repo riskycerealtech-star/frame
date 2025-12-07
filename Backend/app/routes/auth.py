@@ -19,10 +19,10 @@ class LoginRequest(BaseModel):
     password: str
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, summary="Create new account")
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
     user_service = UserService(db)
@@ -45,7 +45,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     return user
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, summary="Login and get access token")
 async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     """Login user and return access token"""
     user_service = UserService(db)
@@ -71,31 +71,14 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     }
 
 
-@router.get("/me", response_model=UserResponse)
-async def read_users_me(current_user: dict = Depends(get_current_user)):
-    """Get current user information"""
-    return current_user
-
-
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Get current authenticated user"""
-    from app.core.security import verify_token
-    from app.services.user_service import UserService
-    
-    user_id = verify_token(token)
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
+@router.get("/status/email/{email}", response_model=UserResponse, summary="Get user by email")
+async def get_user_by_email(email: str, db: Session = Depends(get_db)):
+    """Get user information by email address"""
     user_service = UserService(db)
-    user = user_service.get_user_by_id(int(user_id))
-    if user is None:
+    user = user_service.get_user_by_email(email)
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
     return user
