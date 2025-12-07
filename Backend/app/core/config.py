@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     # API Settings
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "Pro. Flame Backend APIs"
+    PROJECT_NAME: str = "Frame Backend API"
     VERSION: str = "1.0.0"
     DESCRIPTION: str = "AI-powered sunglasses detection and marketplace API"
     

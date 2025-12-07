@@ -21,9 +21,35 @@ from config import settings
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Flame Backend APIs",
+    title="Frame API",
     version="1.0.0",
-    description="",
+    description="""
+    ## Frame API - Authentication & User Management
+    
+    A RESTful API for user registration, authentication, and management using JWT tokens.
+    
+    ### Features
+    
+    * 🔐 **User Registration** - Create new user accounts
+    * 🔑 **JWT Authentication** - Secure token-based authentication
+    * 👤 **User Profile** - Get current user information
+    * 📚 **OpenAPI Documentation** - Interactive API documentation
+    
+    ### Authentication
+    
+    Most endpoints require authentication using JWT Bearer tokens. 
+    To authenticate, use the `/login` endpoint to get an access token, 
+    then include it in the `Authorization` header:
+    
+    ```
+    Authorization: Bearer <your-access-token>
+    ```
+    
+    ### Token Expiration
+    
+    Access tokens expire after 30 minutes by default. 
+    You can configure this via the `ACCESS_TOKEN_EXPIRE_MINUTES` environment variable.
+    """,
     contact={
         "name": "Frame API Support",
         "email": "support@example.com",
@@ -33,13 +59,13 @@ app = FastAPI(
     },
     tags_metadata=[
         {
-            "name": "1. Authentication",
+            "name": "Authentication",
             "description": "User authentication endpoints. Register new users and login to get JWT tokens.",
         },
 
         {
-            "name": "2. Flame Flow",
-            "description": "Flame flow endpoints and user-related operations. Requires authentication.",
+            "name": "Users",
+            "description": "User profile and information endpoints. Requires authentication.",
         },
         {
             "name": "General",
@@ -86,11 +112,11 @@ app.openapi = custom_openapi
 
 
 @app.post(
-    "/v1/auth/signup",
+    "/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
-    tags=["1. Authentication"],
-    summary="Create new account",
+    tags=["Authentication"],
+    summary="Register a new user",
     description="""
     Register a new user account with email, username, and password.
     
@@ -180,7 +206,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @app.post(
     "/login",
     response_model=Token,
-    tags=["1. Authentication"],
+    tags=["Authentication"],
     summary="Login and get access token",
     description="""
     Authenticate a user and receive a JWT access token.
@@ -261,7 +287,7 @@ def login(
 @app.get(
     "/me",
     response_model=UserResponse,
-    tags=["2. Flame Flow"],
+    tags=["Users"],
     summary="Get current user information",
     description="""
     Get the profile information of the currently authenticated user.

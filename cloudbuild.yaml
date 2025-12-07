@@ -1,7 +1,7 @@
 steps:
-  # Build the container image from Backend directory
+  # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/frame-api:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/frame-api:latest', './Backend']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/frame-api:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/frame-api:latest', '.']
   
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
