@@ -76,3 +76,37 @@ async def validate_sunglasses_base64(
             status_code=500,
             detail=f"AI validation failed: {str(e)}"
         )
+
+@router.post("/analyze-frame", response_model=ValidationResponse, tags=["2. Flame Flow"])
+async def analyze_frame_features(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Analyze frame features including style, color, and quality metrics"""
+    try:
+        # Validate file type
+        if not file.content_type or not file.content_type.startswith('image/'):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file type. Please upload an image file."
+            )
+        
+        # Read image content
+        image_content = await file.read()
+        
+        if len(image_content) == 0:
+            raise HTTPException(status_code=400, detail="Empty file uploaded")
+        
+        # Analyze frame features using AI service
+        ai_service = AIValidationService()
+        result = await ai_service.analyze_frame_features(image_content)
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Frame analysis failed: {str(e)}"
+        )

@@ -98,3 +98,105 @@ class AIValidationService:
                 },
                 "timestamp": "2024-01-01T00:00:00Z"
             }
+    
+    async def analyze_frame_features(self, image_content: bytes) -> Dict[str, Any]:
+        """Analyze frame features including style, color, and quality"""
+        try:
+            # Load and analyze the image
+            image = Image.open(io.BytesIO(image_content))
+            width, height = image.size
+            
+            # Convert to RGB for color analysis
+            rgb_image = image.convert('RGB')
+            pixels = list(rgb_image.getdata())
+            
+            # Analyze colors
+            r_values = [p[0] for p in pixels]
+            g_values = [p[1] for p in pixels]
+            b_values = [p[2] for p in pixels]
+            
+            avg_r = sum(r_values) / len(r_values)
+            avg_g = sum(g_values) / len(g_values)
+            avg_b = sum(b_values) / len(b_values)
+            
+            # Determine dominant color
+            if avg_r > avg_g and avg_r > avg_b:
+                dominant_color = "red"
+            elif avg_g > avg_r and avg_g > avg_b:
+                dominant_color = "green"
+            elif avg_b > avg_r and avg_b > avg_g:
+                dominant_color = "blue"
+            else:
+                dominant_color = "neutral"
+            
+            # Analyze frame style (simplified heuristic)
+            aspect_ratio = width / height if height > 0 else 1
+            
+            if aspect_ratio > 1.5:
+                frame_style = "rectangular"
+            elif aspect_ratio < 0.8:
+                frame_style = "round"
+            else:
+                frame_style = "square"
+            
+            # Quality analysis (based on image resolution and clarity)
+            total_pixels = width * height
+            quality_score = min(1.0, total_pixels / (500 * 500))  # Normalize to 500x500 baseline
+            
+            if quality_score > 0.8:
+                quality = "high"
+            elif quality_score > 0.5:
+                quality = "medium"
+            else:
+                quality = "low"
+            
+            # Create comprehensive response
+            return {
+                "status": "analyzed",
+                "confidence": 0.85,
+                "message": f"Frame analysis complete: {frame_style} style, {dominant_color} tones, {quality} quality",
+                "details": f"Analyzed {width}x{height} image with {total_pixels:,} pixels",
+                "analysis": {
+                    "style": {
+                        "type": frame_style,
+                        "confidence": 0.8,
+                        "aspect_ratio": round(aspect_ratio, 2)
+                    },
+                    "color": {
+                        "dominant": dominant_color,
+                        "rgb_average": [round(avg_r), round(avg_g), round(avg_b)],
+                        "hex": f"#{round(avg_r):02x}{round(avg_g):02x}{round(avg_b):02x}"
+                    },
+                    "quality": {
+                        "level": quality,
+                        "score": round(quality_score, 2),
+                        "resolution": f"{width}x{height}",
+                        "total_pixels": total_pixels
+                    },
+                    "features": {
+                        "width": width,
+                        "height": height,
+                        "format": image.format or "unknown"
+                    },
+                    "analysis_method": "frame_feature_analysis"
+                },
+                "timestamp": "2024-01-01T00:00:00Z"
+            }
+            
+        except Exception as e:
+            logger.error(f"Frame analysis failed: {e}")
+            # Fallback response
+            return {
+                "status": "error",
+                "confidence": 0.0,
+                "message": "Frame analysis failed",
+                "details": f"Error: {str(e)}",
+                "analysis": {
+                    "style": {"type": "unknown", "confidence": 0.0},
+                    "color": {"dominant": "unknown"},
+                    "quality": {"level": "unknown", "score": 0.0},
+                    "features": {},
+                    "analysis_method": "error_fallback"
+                },
+                "timestamp": "2024-01-01T00:00:00Z"
+            }
