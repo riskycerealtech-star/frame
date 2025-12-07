@@ -33,9 +33,9 @@ gcloud services enable cloudbuild.googleapis.com
 gcloud services enable run.googleapis.com
 gcloud services enable containerregistry.googleapis.com
 
-# Build the Docker image
+# Build the Docker image from Backend directory
 echo "🏗️  Building Docker image..."
-gcloud builds submit --tag ${IMAGE_NAME}
+gcloud builds submit --tag ${IMAGE_NAME} ./Backend
 
 # Deploy to Cloud Run
 echo "🚀 Deploying to Cloud Run..."
