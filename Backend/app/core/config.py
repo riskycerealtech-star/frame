@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     
     # API Settings
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "Flame Backend APIs"
+    PROJECT_NAME: str = "Glass Backend APIs"
     VERSION: str = "1.0.0"
-    DESCRIPTION: str = "Flame Backend APIs"
+    DESCRIPTION: str = "Glass Backend APIs"
     
     # Database Settings
     DATABASE_URL: Optional[str] = "postgresql://postgres:password@localhost:5432/sunglass_db"
