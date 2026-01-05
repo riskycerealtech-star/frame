@@ -1,9 +1,12 @@
 """
 Main FastAPI application with proper Swagger UI configuration
 """
+import os
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.database import Base, engine
@@ -119,3 +122,22 @@ async def root():
         "version": settings.VERSION,
         "docs": "/docs/frame/swagger-ui/index.html"
     }
+
+# Favicon endpoint - browsers and Swagger UI automatically request this
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Serve favicon.ico for browser tabs and Swagger UI"""
+    # Get the path to the static directory (Backend/static/)
+    base_dir = Path(__file__).resolve().parent.parent
+    favicon_path = base_dir / "static" / "favicon.ico"
+    
+    if favicon_path.exists():
+        return FileResponse(
+            path=str(favicon_path),
+            media_type="image/x-icon",
+            headers={"Cache-Control": "public, max-age=31536000"}
+        )
+    else:
+        # Return 204 No Content if favicon not found (prevents 404 errors in browser console)
+        from starlette.responses import Response
+        return Response(status_code=204)
