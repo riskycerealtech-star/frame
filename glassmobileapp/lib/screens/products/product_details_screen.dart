@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../constants/colors.dart';
 import '../../config/app_router.dart';
 import '../../constants/routes.dart';
-import '../../widgets/common/back_button_widget.dart';
+import '../../config/theme_controller.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -19,6 +21,159 @@ class ProductDetailsScreen extends StatefulWidget {
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   bool _isExpanded = false;
   int _selectedImageIndex = 0;
+  final TextEditingController _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  String _shareLink() {
+    final name = (widget.product['name'] ?? 'Frame').toString();
+    final fromData = widget.product['shareUrl']?.toString();
+    if (fromData != null && fromData.trim().isNotEmpty) return fromData.trim();
+    return 'https://frame.com/product?name=${Uri.encodeComponent(name)}';
+  }
+
+  Future<void> _shareToAnyApp() async {
+    final link = _shareLink();
+    await Share.share(link, subject: 'Frame Details');
+  }
+
+  void _showShareDialog() {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        Widget shareItem({
+          required IconData icon,
+          required String label,
+          required Color color,
+        }) {
+          final labelColor = Colors.white.withOpacity(0.75);
+          return InkWell(
+            onTap: () async {
+              Navigator.of(context).pop();
+              await _shareToAnyApp();
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: isTablet ? 52 : 48,
+                    height: isTablet ? 52 : 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border, width: 1),
+                    ),
+                    child: Center(
+                      child: FaIcon(
+                        icon,
+                        color: color,
+                        size: isTablet ? 26 : 24,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: isTablet ? 12 : 11,
+                      color: labelColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Dialog(
+          backgroundColor: const Color(0xFF30363D),
+          insetPadding: EdgeInsets.symmetric(horizontal: isTablet ? 18 : 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(isTablet ? 18 : 14, isTablet ? 16 : 14, isTablet ? 18 : 14, isTablet ? 14 : 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Share with a friend',
+                        style: TextStyle(
+                          fontSize: isTablet ? 18 : 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      color: Colors.white70,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: isTablet ? 110 : 104,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: [
+                        shareItem(
+                          icon: FontAwesomeIcons.whatsapp,
+                          label: 'WhatsApp',
+                          color: const Color(0xFF25D366),
+                        ),
+                        shareItem(
+                          icon: FontAwesomeIcons.facebookMessenger,
+                          label: 'Messenger',
+                          color: const Color(0xFF0084FF),
+                        ),
+                        shareItem(
+                          icon: FontAwesomeIcons.instagram,
+                          label: 'Instagram',
+                          color: const Color(0xFFE1306C),
+                        ),
+                        shareItem(
+                          icon: FontAwesomeIcons.tiktok,
+                          label: 'TikTok',
+                          color: const Color(0xFF000000),
+                        ),
+                        shareItem(
+                          icon: FontAwesomeIcons.snapchat,
+                          label: 'Snapchat',
+                          color: const Color(0xFFFFFC00),
+                        ),
+                        shareItem(
+                          icon: FontAwesomeIcons.envelope,
+                          label: 'Gmail',
+                          color: const Color(0xFFEA4335),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
   
   // Get list of product images (supporting both single image and multiple images)
   // For testing: Always display 4 thumbnails
@@ -57,20 +212,31 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   void _showLoginDialog() {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
+    bool isLoginHovering = false;
     
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Container(
-            padding: EdgeInsets.all(isTablet ? 24.0 : 20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: appThemeMode,
+          builder: (context, mode, _) {
+            final isDarkDialog = mode == ThemeMode.dark || 
+                                (mode == ThemeMode.system && 
+                                 MediaQuery.of(context).platformBrightness == Brightness.dark);
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                return Dialog(
+                  backgroundColor: isDarkDialog ? AppColors.darkGrey : AppColors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                padding: EdgeInsets.all(isTablet ? 24.0 : 20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                 // Icon
                 Container(
                   width: isTablet ? 80.0 : 70.0,
@@ -90,11 +256,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 
                 // Title
                 Text(
-                  'Login Required',
+                  'Create Account',
                   style: TextStyle(
                     fontSize: isTablet ? 22.0 : 20.0,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: isDarkDialog ? AppColors.white : AppColors.textPrimary,
                   ),
                 ),
                 
@@ -102,7 +268,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 
                 // Message
                 Text(
-                  'Please login to add items to cart or make a purchase.',
+                  'Choose an option to continue your purchase.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: isTablet ? 16.0 : 14.0,
@@ -113,18 +279,25 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 
                 SizedBox(height: isTablet ? 24.0 : 20.0),
                 
-                // Buttons
-                Row(
+                // Options (2 rows, centered)
+                SizedBox(
+                  width: double.infinity,
+                  child: Column(
                   children: [
-                    // Cancel Button
-                    Expanded(
-                      child: OutlinedButton(
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
                         onPressed: () {
                           Navigator.of(context).pop();
+                            AppRouter.pushNamed(
+                              context,
+                              AppRoutes.buyFrame,
+                              arguments: {'product': widget.product},
+                            );
                         },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                          side: BorderSide(color: AppColors.border, width: 1),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: const BorderSide(color: Colors.blue, width: 2),
                           padding: EdgeInsets.symmetric(
                             vertical: isTablet ? 14.0 : 12.0,
                           ),
@@ -133,7 +306,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           ),
                         ),
                         child: Text(
-                          'Cancel',
+                            'Check out as Guest',
                           style: TextStyle(
                             fontSize: isTablet ? 16.0 : 14.0,
                             fontWeight: FontWeight.w600,
@@ -141,40 +314,92 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ),
                       ),
                     ),
-                    
-                    SizedBox(width: 12),
-                    
-                    // Login Button
-                    Expanded(
-                      child: ElevatedButton(
+                      SizedBox(height: isTablet ? 12.0 : 10.0),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                            AppRouter.pushNamed(context, AppRoutes.signup);
+                        },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
+                          padding: EdgeInsets.symmetric(
+                            vertical: isTablet ? 14.0 : 12.0,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                            elevation: 0,
+                        ),
+                        child: Text(
+                            'Create Account',
+                          style: TextStyle(
+                            fontSize: isTablet ? 16.0 : 14.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                      SizedBox(height: isTablet ? 10.0 : 8.0),
+                      TextButton(
                         onPressed: () {
                           Navigator.of(context).pop();
                           AppRouter.pushNamed(context, AppRoutes.signin);
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          padding: EdgeInsets.symmetric(
-                            vertical: isTablet ? 14.0 : 12.0,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          'Login',
-                          style: TextStyle(
-                            fontSize: isTablet ? 16.0 : 14.0,
-                            fontWeight: FontWeight.w600,
+                        child: RichText(
+                          text: TextSpan(
+                            style: TextStyle(
+                              fontSize: isTablet ? 14.0 : 13.0,
+                              decoration: TextDecoration.none,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Already have an account? ',
+                                style: const TextStyle(color: Colors.black),
+                              ),
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.baseline,
+                                baseline: TextBaseline.alphabetic,
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  onEnter: (_) => setModalState(() => isLoginHovering = true),
+                                  onExit: (_) => setModalState(() => isLoginHovering = false),
+                                  child: Text(
+                                    'Login',
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      decoration: isLoginHovering ? TextDecoration.underline : TextDecoration.none,
+                                      decorationColor: Colors.red,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: isTablet ? 14.0 : 13.0,
+                          ),
+                        ),
+                      ),
                   ],
+                  ),
                 ),
               ],
             ),
           ),
+            );
+              },
+            );
+          },
         );
       },
     );
@@ -185,38 +410,51 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
     final isTablet = screenWidth > 600;
+    // Match _buildImageGallery's effective height (main image + outer padding).
+    // This prevents the header from overflowing and covering the scroll content.
+    final headerHeight = isTablet ? (400.0 + 32.0) : (320.0 + 24.0);
 
-    return Scaffold(
-      backgroundColor: AppColors.white,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: appThemeMode,
+      builder: (context, mode, _) {
+        // Determine if dark mode based on theme mode
+        final isDark = mode == ThemeMode.dark || 
+                      (mode == ThemeMode.system && 
+                       MediaQuery.of(context).platformBrightness == Brightness.dark);
+        
+        return Scaffold(
+          backgroundColor: isDark ? AppColors.darkGrey : AppColors.white,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showLoginDialog,
+        backgroundColor: isDark ? AppColors.darkGrey : AppColors.white,
+        foregroundColor: const Color(0xFFD93211),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(
+            color: Color(0xFFD93211),
+            width: 2,
+          ),
+        ),
+        label: const Text('Buy Now'),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: isDark ? AppColors.primary : AppColors.primary,
         foregroundColor: AppColors.white,
         elevation: 0,
         centerTitle: false,
-        leadingWidth: 56,
         titleSpacing: 8,
         title: Text(
-          'Flame Details',
+          'Frame Details',
           style: TextStyle(
             fontSize: isTablet ? 20.0 : 18.0,
             fontWeight: FontWeight.normal,
           ),
         ),
-        leading: Container(
-          width: 40,
-          height: 40,
-          margin: EdgeInsets.only(left: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD93211),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: BackButtonWidget(
-              color: AppColors.white,
-              size: 20,
-              padding: EdgeInsets.zero,
-            ),
-          ),
+        leading: IconButton(
+          onPressed: () => AppRouter.pop(context),
+          icon: const Icon(Icons.arrow_back),
         ),
         actions: [
           IconButton(
@@ -226,25 +464,36 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               size: isTablet ? 24.0 : 22.0,
             ),
             onPressed: () {
-              // Handle share
+              _showShareDialog();
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product Image Gallery
-            _buildImageGallery(isTablet),
-
-            // Product Information
-            Padding(
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _FixedHeaderDelegate(
+              height: headerHeight,
+              child: Material(
+                color: isDark ? AppColors.darkGrey : AppColors.white,
+                elevation: 0,
+                clipBehavior: Clip.hardEdge,
+                child: _buildImageGallery(isTablet),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Container(
+              color: isDark ? AppColors.darkGrey : AppColors.white,
+              child: Padding(
               padding: EdgeInsets.fromLTRB(
                 isTablet ? 24.0 : 16.0,
                 isTablet ? 8.0 : 6.0,
                 isTablet ? 24.0 : 16.0,
-                isTablet ? 24.0 : 16.0,
+                  // extra bottom padding so FAB doesn't cover content
+                  (isTablet ? 24.0 : 16.0) + 90.0,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,7 +504,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     style: TextStyle(
                       fontSize: isTablet ? 28.0 : 24.0,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: isDark ? AppColors.white : AppColors.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -277,7 +526,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             style: TextStyle(
                               fontSize: isTablet ? 20.0 : 18.0,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: isDark ? AppColors.white : AppColors.textPrimary,
                             ),
                           ),
                           _buildPriceDisplay(isTablet),
@@ -291,58 +540,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                   SizedBox(height: isTablet ? 24.0 : 20.0),
 
-                  // Features and Color
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Features',
-                        style: TextStyle(
-                          fontSize: isTablet ? 20.0 : 18.0,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Spacer(),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isTablet ? 12.0 : 10.0,
-                          vertical: isTablet ? 6.0 : 4.0,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getColorFromName(widget.product['color']).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _getColorFromName(widget.product['color']),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          widget.product['color'],
-                          style: TextStyle(
-                            fontSize: isTablet ? 14.0 : 12.0,
-                            fontWeight: FontWeight.w600,
-                            color: _getColorFromName(widget.product['color']),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: isTablet ? 12.0 : 8.0),
-
-                  _buildWidthFeature(isTablet),
-                  _buildShippingFeature(isTablet),
-                  _buildProgressiveFeature(isTablet),
-                  _buildReadingFeature(isTablet),
-
-                  SizedBox(height: isTablet ? 24.0 : 20.0),
+                  // (Features section removed)
 
                   // Action Buttons
                   Row(
                     children: [
                       Expanded(
-                        flex: 2,
                         child: ElevatedButton(
                           onPressed: () {
                             _showLoginDialog();
@@ -366,41 +569,110 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            _showLoginDialog();
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFD93211),
-                            side: BorderSide(color: const Color(0xFFD93211), width: 2),
-                            padding: EdgeInsets.symmetric(
-                              vertical: isTablet ? 16.0 : 14.0,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                    ],
+                  ),
+
+                  SizedBox(height: isTablet ? 16.0 : 12.0),
+
+                  // Static comments (UI only)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Comments',
+                      style: TextStyle(
+                        fontSize: isTablet ? 16.0 : 14.0,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.white : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 10.0 : 8.0),
+                  ..._buildStaticComments(isTablet, isDark),
+                  SizedBox(height: isTablet ? 16.0 : 12.0),
+
+                  // Comment box + button (UI only)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Comment',
+                      style: TextStyle(
+                        fontSize: isTablet ? 16.0 : 14.0,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.white : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 10.0 : 8.0),
+                  TextField(
+                    controller: _commentController,
+                    maxLines: 4,
+                    cursorColor: isDark ? AppColors.white : Colors.black,
+                    decoration: InputDecoration(
+                      hintText: 'Write your comment...',
+                      hintStyle: TextStyle(
+                        color: AppColors.textSecondary.withOpacity(0.7),
+                      ),
+                      fillColor: isDark ? AppColors.darkGrey : AppColors.white,
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: isDark ? AppColors.white : Colors.black, width: 1),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: isDark ? AppColors.white : Colors.black, width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: isDark ? AppColors.white : Colors.black, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    style: TextStyle(color: isDark ? AppColors.white : Colors.black),
+                  ),
+                  SizedBox(height: isTablet ? 12.0 : 10.0),
+                  SizedBox(
+                    width: double.infinity,
+                    height: isTablet ? 52.0 : 48.0,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final text = _commentController.text.trim();
+                        if (text.isEmpty) return;
+                        _commentController.clear();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Comment submitted'),
+                            backgroundColor: AppColors.primary,
+                            duration: const Duration(seconds: 2),
                           ),
-                          child: Text(
-                            'Buy Now',
-                            style: TextStyle(
-                              fontSize: isTablet ? 16.0 : 14.0,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.darkGreen,
+                        foregroundColor: AppColors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Post Comment',
+                        style: TextStyle(
+                          fontSize: isTablet ? 15.0 : 14.0,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ],
+                    ),
                   ),
 
                   SizedBox(height: isTablet ? 24.0 : 20.0),
                 ],
               ),
             ),
-          ],
         ),
+          ),
+        ],
       ),
+        );
+      },
     );
   }
 
@@ -431,12 +703,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           Container(
             width: isTablet ? 80.0 : 70.0,
             margin: EdgeInsets.only(right: isTablet ? 16.0 : 12.0),
-            child: SingleChildScrollView(
-              child: Column(
-                children: _productImages.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  String imagePath = entry.value;
-                  bool isSelected = index == _selectedImageIndex;
+            child: SizedBox(
+              height: isTablet ? 400 : 320,
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _productImages.length,
+                itemBuilder: (context, index) {
+                  final imagePath = _productImages[index];
+                  final isSelected = index == _selectedImageIndex;
                   
                   return GestureDetector(
                     onTap: () {
@@ -476,7 +751,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ),
                     ),
                   );
-                }).toList(),
+                },
               ),
             ),
           ),
@@ -502,7 +777,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ),
                       child: Image.asset(
                         _productImages[_selectedImageIndex],
-                        fit: BoxFit.contain,
+                        fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: AppColors.primary.withOpacity(0.1),
@@ -535,40 +810,35 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  // Get review count for the product
-  int _getReviewCount() {
-    // Check if review count is already in product data
-    if (widget.product['reviewCount'] != null) {
-      final count = int.tryParse(widget.product['reviewCount'].toString());
-      if (count != null && count > 0) {
-        return count;
-      }
-    }
-    
-    // Generate review count based on product name hash for consistent display per product
-    // Reviews will be between 5 and 150
-    final productName = widget.product['name'] ?? '';
+  double _getStarRating() {
+    // Use rating from product data if present; otherwise derive a stable mock.
+    final fromData = widget.product['rating'];
+    final parsed = fromData is num ? fromData.toDouble() : double.tryParse((fromData ?? '').toString());
+    if (parsed != null && parsed > 0) return parsed.clamp(0.0, 5.0);
+
+    final productName = (widget.product['name'] ?? '').toString();
     final hash = productName.hashCode.abs();
-    final reviewCount = 5 + (hash % 146); // 5 to 150
-    return reviewCount;
+    final rating = 3.6 + ((hash % 15) * 0.1); // 3.6 .. 5.0
+    return rating > 5.0 ? 5.0 : rating;
   }
 
   Widget _buildReviewCount(bool isTablet) {
-    final reviewCount = _getReviewCount();
+    final rating = _getStarRating();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.visibility,
-          size: isTablet ? 14.0 : 12.0,
-          color: Colors.orange,
+          Icons.star,
+          size: isTablet ? 16.0 : 14.0,
+          color: Colors.amber.shade700,
         ),
         SizedBox(width: 4),
         Text(
-          '$reviewCount Reviews',
+          rating.toStringAsFixed(1),
           style: TextStyle(
-            fontSize: isTablet ? 12.0 : 10.0,
-            color: AppColors.textSecondary,
+            fontSize: isTablet ? 12.0 : 11.0,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
@@ -611,19 +881,123 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  // Get width value for the product
-  String _getWidthValue() {
-    // Check if width is already in product data
-    if (widget.product['width'] != null) {
-      return widget.product['width'].toString();
+  List<Widget> _buildStaticComments(bool isTablet, bool isDark) {
+    final comments = <Map<String, dynamic>>[
+      {
+        'name': 'Deodate',
+        'stars': 5,
+        'text': 'Great quality and very comfortable. Looks exactly like the photos.',
+        'date': '2 days ago',
+      },
+      {
+        'name': 'Drew',
+        'stars': 4,
+        'text': 'Nice frame, fast delivery. Packaging could be better but overall good.',
+        'date': '1 week ago',
+      },
+      {
+        'name': 'Mugenzi',
+        'stars': 5,
+        'text': 'Perfect fit! I will definitely buy again.',
+        'date': '3 weeks ago',
+      },
+      {
+        'name': 'Andrew',
+        'stars': 4,
+        'text': 'Good value for the price. The frame feels solid and the lenses are clear.',
+        'date': '1 month ago',
+      },
+    ];
+
+    Widget starsRow(int stars) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(5, (i) {
+          final filled = i < stars;
+          return Icon(
+            filled ? Icons.star : Icons.star_border,
+            size: isTablet ? 14 : 13,
+            color: filled ? Colors.amber.shade700 : AppColors.border,
+          );
+        }),
+      );
     }
-    
-    // Generate width based on product name hash for consistent display per product
-    final productName = widget.product['name'] ?? '';
-    final widthOptions = ['Small', 'Medium', 'Large', 'Extra Large'];
-    final hash = productName.hashCode.abs();
-    final widthIndex = hash % widthOptions.length;
-    return widthOptions[widthIndex];
+
+    return comments.map((c) {
+      final name = (c['name'] ?? '').toString();
+      final text = (c['text'] ?? '').toString();
+      final date = (c['date'] ?? '').toString();
+      final stars = (c['stars'] as int?) ?? 5;
+
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: EdgeInsets.all(isTablet ? 12 : 10),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkGrey : AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDark ? AppColors.border : AppColors.border, width: 1),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: isTablet ? 18 : 16,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              child: Text(
+                name.isEmpty ? '?' : name[0].toUpperCase(),
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: isTablet ? 14 : 13,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: TextStyle(
+                            color: isDark ? AppColors.white : AppColors.textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: isTablet ? 13.5 : 12.5,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        date,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: isTablet ? 12 : 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  starsRow(stars),
+                  const SizedBox(height: 6),
+                  Text(
+                    text,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: isTablet ? 13 : 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
   }
 
   // Get reduced price for display (original price before discount)
@@ -682,242 +1056,31 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  Widget _buildWidthFeature(bool isTablet) {
-    final widthValue = _getWidthValue();
-    return Padding(
-      padding: EdgeInsets.only(bottom: isTablet ? 8.0 : 6.0),
-      child: Row(
-        children: [
-          Icon(
-            Icons.wb_sunny,
-            color: AppColors.primary,
-            size: isTablet ? 20.0 : 18.0,
-          ),
-          SizedBox(width: 12),
-          Text.rich(
-            TextSpan(
-              text: 'Width: ',
-              style: TextStyle(
-                fontSize: isTablet ? 16.0 : 14.0,
-                color: AppColors.textSecondary,
-              ),
-              children: [
-                TextSpan(
-                  text: widthValue,
-                  style: TextStyle(
-                    fontSize: isTablet ? 16.0 : 14.0,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  // (Features section removed)
+}
+
+class _FixedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _FixedHeaderDelegate({
+    required this.height,
+    required this.child,
+  });
+
+  final double height;
+  final Widget child;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox.expand(child: child);
   }
 
-  // Get shipping fee for the product (less than $10.00)
-  double _getShippingFee() {
-    // Check if shipping fee is already in product data
-    if (widget.product['shippingFee'] != null) {
-      final fee = double.tryParse(widget.product['shippingFee'].toString());
-      if (fee != null && fee < 10.00) {
-        return fee;
-      }
-    }
-    
-    // Generate shipping fee based on product name hash for consistent display per product
-    // Fees will be between $2.00 and $9.99
-    final productName = widget.product['name'] ?? '';
-    final hash = productName.hashCode.abs();
-    // Generate a fee between 2.00 and 9.99
-    final baseFee = 2.00 + (hash % 800) / 100.0; // 2.00 to 9.99
-    return double.parse(baseFee.toStringAsFixed(2));
-  }
-
-  Widget _buildShippingFeature(bool isTablet) {
-    final shippingFee = _getShippingFee();
-    return Padding(
-      padding: EdgeInsets.only(bottom: isTablet ? 8.0 : 6.0),
-      child: Row(
-        children: [
-          Icon(
-            Icons.local_shipping,
-            color: AppColors.primary,
-            size: isTablet ? 20.0 : 18.0,
-          ),
-          SizedBox(width: 12),
-          Text.rich(
-            TextSpan(
-              text: 'Shipping: ',
-              style: TextStyle(
-                fontSize: isTablet ? 16.0 : 14.0,
-                color: AppColors.textSecondary,
-              ),
-              children: [
-                TextSpan(
-                  text: '\$${shippingFee.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: isTablet ? 16.0 : 14.0,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Get bifocal type for the product
-  String _getBifocalType() {
-    // Check if bifocal type is already in product data
-    if (widget.product['bifocalType'] != null) {
-      return widget.product['bifocalType'].toString();
-    }
-    
-    // Generate bifocal type based on product name hash for consistent display per product
-    final productName = widget.product['name'] ?? '';
-    final bifocalOptions = ['Bifocal', 'Trifocal', 'Progressive', 'Single Vision'];
-    final hash = productName.hashCode.abs();
-    final bifocalIndex = hash % bifocalOptions.length;
-    return bifocalOptions[bifocalIndex];
-  }
-
-  Widget _buildProgressiveFeature(bool isTablet) {
-    final bifocalType = _getBifocalType();
-    return Padding(
-      padding: EdgeInsets.only(bottom: isTablet ? 8.0 : 6.0),
-      child: Row(
-        children: [
-          Icon(
-            Icons.fitness_center,
-            color: AppColors.primary,
-            size: isTablet ? 20.0 : 18.0,
-          ),
-          SizedBox(width: 12),
-          Text.rich(
-            TextSpan(
-              text: 'Progressive: ',
-              style: TextStyle(
-                fontSize: isTablet ? 16.0 : 14.0,
-                color: AppColors.textSecondary,
-              ),
-              children: [
-                TextSpan(
-                  text: bifocalType,
-                  style: TextStyle(
-                    fontSize: isTablet ? 16.0 : 14.0,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Get reading type for the product
-  String _getReadingType() {
-    // Check if reading type is already in product data
-    if (widget.product['readingType'] != null) {
-      return widget.product['readingType'].toString();
-    }
-    
-    // Generate reading type based on product name hash for consistent display per product
-    final productName = widget.product['name'] ?? '';
-    final readingOptions = ['Single Vision', 'Bifocal', 'Progressive', 'Trifocal', 'Reading'];
-    final hash = productName.hashCode.abs();
-    final readingIndex = hash % readingOptions.length;
-    return readingOptions[readingIndex];
-  }
-
-  Widget _buildReadingFeature(bool isTablet) {
-    final readingType = _getReadingType();
-    return Padding(
-      padding: EdgeInsets.only(bottom: isTablet ? 8.0 : 6.0),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_circle,
-            color: AppColors.primary,
-            size: isTablet ? 20.0 : 18.0,
-          ),
-          SizedBox(width: 12),
-          Text.rich(
-            TextSpan(
-              text: 'Reading: ',
-              style: TextStyle(
-                fontSize: isTablet ? 16.0 : 14.0,
-                color: AppColors.textSecondary,
-              ),
-              children: [
-                TextSpan(
-                  text: readingType,
-                  style: TextStyle(
-                    fontSize: isTablet ? 16.0 : 14.0,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeatureItem(String feature, IconData icon, bool isTablet) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isTablet ? 8.0 : 6.0),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: AppColors.primary,
-            size: isTablet ? 20.0 : 18.0,
-          ),
-          SizedBox(width: 12),
-          Text(
-            feature,
-            style: TextStyle(
-              fontSize: isTablet ? 16.0 : 14.0,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getColorFromName(String colorName) {
-    switch (colorName.toLowerCase()) {
-      case 'black':
-        return Colors.black;
-      case 'green':
-        return Colors.green;
-      case 'blue':
-        return Colors.blue;
-      case 'red':
-        return Colors.red;
-      case 'brown':
-        return Colors.brown;
-      case 'gray':
-        return Colors.grey;
-      case 'white':
-        return Colors.white;
-      case 'purple':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
+  @override
+  bool shouldRebuild(covariant _FixedHeaderDelegate oldDelegate) {
+    return oldDelegate.height != height || oldDelegate.child != child;
   }
 }

@@ -4,6 +4,7 @@ import '../../config/app_router.dart';
 import '../../constants/routes.dart';
 import '../../constants/colors.dart';
 import '../../constants/app_constants.dart';
+import '../../config/theme_controller.dart';
 
 class PublicProductsScreen extends StatefulWidget {
   const PublicProductsScreen({super.key});
@@ -17,72 +18,112 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
   int _currentImageIndex = 0;
   Timer? _autoScrollTimer;
   String _selectedColor = 'All'; // Track selected color filter
-  bool _isSearchVisible = false; // Track search input visibility
   bool _isLoading = false; // Track loading state
   int _visibleItems = 4; // Track visible items (2 rows x 2 columns)
-  bool _isPriceRangeVisible = false; // Track price range search visibility
   final TextEditingController _minPriceController = TextEditingController();
   final TextEditingController _maxPriceController = TextEditingController();
   final int _cartCount = 0; // Cart item count
+  bool _isSellHovering = false;
+  int? _minPrice;
+  int? _maxPrice;
+  String? _selectedSize;
+  bool _isBottomSheetOpen = false;
+  String? _lastNoResultsKeyShown;
+
+  void _showBottomNotification(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        dismissDirection: DismissDirection.horizontal,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 3),
+        duration: const Duration(seconds: 4),
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5D25E),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton(
+                onPressed: messenger.hideCurrentSnackBar,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+                child: const Text('Dismiss'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   
   // Filter selections
   String? _selectedGender;
   String? _selectedBrand;
   String? _selectedShape;
   String? _selectedTheme;
+  String? _selectedCategory;
   String? _lastSelectedFilterType; // Track which filter type was selected last
-
-  // Navigation menu items
-  final List<Map<String, dynamic>> _navMenuItems = [
-    {
-      'type': 'title',
-      'text': 'Sell',
-      'isExpanded': true,
-    },
-    {
-      'type': 'text',
-      'text': 'Cart',
-      'action': 'cart',
-    },
-    {
-      'type': 'icon',
-      'icon': Icons.shopping_cart,
-      'action': 'cart',
-    },
-  ];
 
   // List of hero images with product info and sizes
   final List<Map<String, dynamic>> _heroImages = [
-    {'image': 'asset/images/a.jpg', 'name': 'Ray-Ban RB4165 Justin Rectangular', 'price': 45, 'size': 'Large Sunglasses', 'color': 'Black', 'heartCount': 12},
-    {'image': 'asset/images/ab.jpg', 'name': 'Oakley Men\'s OO9102 Holbrook', 'price': 35, 'size': 'Medium Sunglasses', 'color': 'Green', 'heartCount': 0},
-    {'image': 'asset/images/B.webp', 'name': 'Locs Gangster Oversized', 'price': 55, 'size': 'Extra Large Sunglasses', 'color': 'Blue', 'heartCount': 4},
-    {'image': 'asset/images/c.webp', 'name': 'Gucci GG0061S Square', 'price': 40, 'size': 'Small Sunglasses', 'color': 'Red', 'heartCount': 8},
-    {'image': 'asset/images/d.jpeg', 'name': 'Prada PR17WS Classic', 'price': 120, 'size': 'Large Sunglasses', 'color': 'Brown', 'heartCount': 0},
-    {'image': 'asset/images/d.jpg', 'name': 'Ray-Ban RB2140 Wayfarer', 'price': 25, 'size': 'Medium Sunglasses', 'color': 'Gray', 'heartCount': 2},
-    {'image': 'asset/images/f.webp', 'name': 'Oakley OO9208 Frogskins', 'price': 65, 'size': 'Small Sunglasses', 'color': 'White', 'heartCount': 0},
-    {'image': 'asset/images/gt.webp', 'name': 'Locs Snapback Squared', 'price': 50, 'size': 'Extra Large Sunglasses', 'color': 'Purple', 'heartCount': 15},
-    {'image': 'asset/images/hy.jpg', 'name': 'Gucci GG0070S Aviator', 'price': 85, 'size': 'Large Sunglasses', 'color': 'Black', 'heartCount': 0},
-    {'image': 'asset/images/j.jpg', 'name': 'Prada PR 17ZS Rectangle', 'price': 30, 'size': 'Small Sunglasses', 'color': 'Green', 'heartCount': 5},
-    {'image': 'asset/images/kj.jpg', 'name': 'Ray-Ban RB3016 Clubmaster', 'price': 45, 'size': 'Medium Sunglasses', 'color': 'Blue', 'heartCount': 0},
-    {'image': 'asset/images/kj.png', 'name': 'Oakley OO9208 Frogskins XL', 'price': 35, 'size': 'Extra Large Sunglasses', 'color': 'Red', 'heartCount': 9},
-    {'image': 'asset/images/m.jpg', 'name': 'Locs Knucklehead Screwless', 'price': 75, 'size': 'Large Sunglasses', 'color': 'Brown', 'heartCount': 0},
-    {'image': 'asset/images/mn.jpg', 'name': 'Gucci GG0088S Round', 'price': 40, 'size': 'Small Sunglasses', 'color': 'Gray', 'heartCount': 3},
-    {'image': 'asset/images/n.jpeg', 'name': 'Prada SPH2BF Rectangle', 'price': 60, 'size': 'Medium Sunglasses', 'color': 'White', 'heartCount': 0},
-    {'image': 'asset/images/one.webp', 'name': 'Ray-Ban RB4075 Erika Round', 'price': 55, 'size': 'Extra Large Sunglasses', 'color': 'Purple', 'heartCount': 7},
-    {'image': 'asset/images/p.jpeg', 'name': 'Oakley OO9238 Holbrook Metal', 'price': 70, 'size': 'Large Sunglasses', 'color': 'Black', 'heartCount': 0},
-    {'image': 'asset/images/po.jpg', 'name': 'Locs Nighthawk Aviator', 'price': 50, 'size': 'Small Sunglasses', 'color': 'Green', 'heartCount': 11},
-    {'image': 'asset/images/vb.webp', 'name': 'Gucci GG0025S Square Top', 'price': 45, 'size': 'Medium Sunglasses', 'color': 'Blue', 'heartCount': 0},
-    {'image': 'asset/images/x.jpeg', 'name': 'Prada PR01VS Oversized', 'price': 90, 'size': 'Extra Large Sunglasses', 'color': 'Red', 'heartCount': 6},
+    {'image': 'asset/images/a.jpg', 'name': 'Ray-Ban RB4165 Justin Rectangular', 'price': 45, 'size': 'Large Sunglasses', 'color': 'Black', 'heartCount': 12, 'category': 'Sunglasses'},
+    {'image': 'asset/images/ab.jpg', 'name': 'Oakley Men\'s OO9102 Holbrook', 'price': 35, 'size': 'Medium Sunglasses', 'color': 'Green', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/B.webp', 'name': 'Locs Gangster Oversized', 'price': 55, 'size': 'Extra Large Sunglasses', 'color': 'Blue', 'heartCount': 4, 'category': 'Sunglasses'},
+    {'image': 'asset/images/c.webp', 'name': 'Gucci GG0061S Square', 'price': 40, 'size': 'Small Sunglasses', 'color': 'Red', 'heartCount': 8, 'category': 'Sunglasses'},
+    {'image': 'asset/images/d.jpeg', 'name': 'Prada PR17WS Classic', 'price': 120, 'size': 'Large Sunglasses', 'color': 'Brown', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/d.jpg', 'name': 'Ray-Ban RB2140 Wayfarer', 'price': 25, 'size': 'Medium Sunglasses', 'color': 'Gray', 'heartCount': 2, 'category': 'Sunglasses'},
+    {'image': 'asset/images/f.webp', 'name': 'Oakley OO9208 Frogskins', 'price': 65, 'size': 'Small Sunglasses', 'color': 'White', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/gt.webp', 'name': 'Locs Snapback Squared', 'price': 50, 'size': 'Extra Large Sunglasses', 'color': 'Purple', 'heartCount': 15, 'category': 'Sunglasses'},
+    {'image': 'asset/images/hy.jpg', 'name': 'Gucci GG0070S Aviator', 'price': 85, 'size': 'Large Sunglasses', 'color': 'Black', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/j.jpg', 'name': 'Prada PR 17ZS Rectangle', 'price': 30, 'size': 'Small Sunglasses', 'color': 'Green', 'heartCount': 5, 'category': 'Sunglasses'},
+    {'image': 'asset/images/kj.jpg', 'name': 'Ray-Ban RB3016 Clubmaster', 'price': 45, 'size': 'Medium Sunglasses', 'color': 'Blue', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/kj.png', 'name': 'Oakley OO9208 Frogskins XL', 'price': 35, 'size': 'Extra Large Sunglasses', 'color': 'Red', 'heartCount': 9, 'category': 'Sunglasses'},
+    {'image': 'asset/images/m.jpg', 'name': 'Locs Knucklehead Screwless', 'price': 75, 'size': 'Large Sunglasses', 'color': 'Brown', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/mn.jpg', 'name': 'Gucci GG0088S Round', 'price': 40, 'size': 'Small Sunglasses', 'color': 'Gray', 'heartCount': 3, 'category': 'Sunglasses'},
+    {'image': 'asset/images/n.jpeg', 'name': 'Prada SPH2BF Rectangle', 'price': 60, 'size': 'Medium Sunglasses', 'color': 'White', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/one.webp', 'name': 'Ray-Ban RB4075 Erika Round', 'price': 55, 'size': 'Extra Large Sunglasses', 'color': 'Purple', 'heartCount': 7, 'category': 'Sunglasses'},
+    {'image': 'asset/images/p.jpeg', 'name': 'Oakley OO9238 Holbrook Metal', 'price': 70, 'size': 'Large Sunglasses', 'color': 'Black', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/po.jpg', 'name': 'Locs Nighthawk Aviator', 'price': 50, 'size': 'Small Sunglasses', 'color': 'Green', 'heartCount': 11, 'category': 'Sunglasses'},
+    {'image': 'asset/images/vb.webp', 'name': 'Gucci GG0025S Square Top', 'price': 45, 'size': 'Medium Sunglasses', 'color': 'Blue', 'heartCount': 0, 'category': 'Sunglasses'},
+    {'image': 'asset/images/x.jpeg', 'name': 'Prada PR01VS Oversized', 'price': 90, 'size': 'Extra Large Sunglasses', 'color': 'Red', 'heartCount': 6, 'category': 'Sunglasses'},
   ];
+
+  double _mockStarRatingFor(Map<String, dynamic> product) {
+    // UI-only mock rating derived from heartCount for consistency per card.
+    final hc = (product['heartCount'] as num?)?.toInt() ?? 0;
+    final rating = 3.6 + ((hc % 15) * 0.1); // 3.6 .. 5.0
+    return rating > 5.0 ? 5.0 : rating;
+  }
 
   @override
   void initState() {
     super.initState();
     _startAutoScroll();
-    // Show bottom sheet when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showFilterBottomSheet();
-    });
   }
 
   @override
@@ -135,26 +176,99 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
 
   // Get filtered products based on selected color
   List<Map<String, dynamic>> _getFilteredProducts() {
-    if (_selectedColor == 'All') {
-      return _heroImages;
+    Iterable<Map<String, dynamic>> list = _heroImages;
+
+    // Filter by price range (if set)
+    if (_minPrice != null) {
+      list = list.where((p) => (p['price'] as num?) != null && (p['price'] as num) >= _minPrice!);
     }
-    return _heroImages.where((product) => product['size'] == _selectedColor).toList();
+    if (_maxPrice != null) {
+      list = list.where((p) => (p['price'] as num?) != null && (p['price'] as num) <= _maxPrice!);
+    }
+
+    // Filter by color (if not All)
+    if (_selectedColor != 'All') {
+      list = list.where((p) => (p['color'] ?? '').toString() == _selectedColor);
+    }
+
+    // Filter by category (optional)
+    if (_selectedCategory != null) {
+      list = list.where((p) => (p['category'] ?? '').toString() == _selectedCategory);
+    }
+
+    // Filter by size (optional)
+    if (_selectedSize != null) {
+      list = list.where((p) => (p['size'] ?? '').toString() == _selectedSize);
+    }
+
+    // Filters from the advanced options (optional; inferred from name)
+    if (_selectedBrand != null) {
+      list = list.where((p) => _inferBrand((p['name'] ?? '').toString()) == _selectedBrand);
+    }
+    if (_selectedShape != null) {
+      list = list.where((p) => _inferShape((p['name'] ?? '').toString()) == _selectedShape);
+    }
+    if (_selectedTheme != null) {
+      list = list.where((p) => _inferTheme((p['name'] ?? '').toString()) == _selectedTheme);
+    }
+    if (_selectedGender != null) {
+      list = list.where((p) => _inferGender((p['name'] ?? '').toString()) == _selectedGender);
+    }
+
+    return list.toList();
   }
 
-  // Handle color filter selection with loading animation
-  void _onColorFilterSelected(String colorName) async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    // Simulate loading delay
-    await Future.delayed(Duration(milliseconds: 800));
-    
-    setState(() {
-      _selectedColor = colorName;
-      _isLoading = false;
-      _visibleItems = 4; // Reset to 2 rows when filtering
-    });
+  String? _inferBrand(String name) {
+    final n = name.toLowerCase();
+    if (n.startsWith('ray-ban')) return 'Ray-Ban';
+    if (n.startsWith('oakley')) return 'Oakley';
+    if (n.startsWith('gucci')) return 'Gucci';
+    if (n.startsWith('prada')) return 'Prada';
+    if (n.startsWith('locs')) return 'Locs';
+
+    // Fallback: match anywhere
+    if (n.contains('ray-ban')) return 'Ray-Ban';
+    if (n.contains('oakley')) return 'Oakley';
+    if (n.contains('gucci')) return 'Gucci';
+    if (n.contains('prada')) return 'Prada';
+    if (n.contains('locs')) return 'Locs';
+    return null;
+  }
+
+  String? _inferShape(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('round')) return 'Round';
+    if (n.contains('square')) return 'Square';
+    if (n.contains('oval')) return 'Oval';
+    if (n.contains('rectangle') || n.contains('rectangular')) return 'Rectangle';
+    if (n.contains('aviator') || n.contains('wayfarer')) return 'Rectangle';
+    return null;
+  }
+
+  String? _inferTheme(String name) {
+    final brand = _inferBrand(name);
+    if (brand == 'Oakley') return 'Sport';
+    if (brand == 'Gucci' || brand == 'Prada') return 'Luxury';
+    if (brand == 'Ray-Ban') return 'Classic';
+    if (brand == 'Locs') return 'Fashion';
+    return null;
+  }
+
+  String? _inferGender(String name) {
+    final n = name.toLowerCase();
+    if (n.contains("men's") || RegExp(r'\bmen\b').hasMatch(n)) return 'Male';
+    if (n.contains("women's") || RegExp(r'\bwomen\b').hasMatch(n)) return 'Female';
+    return null;
+  }
+
+  List<String> _availableSizes() {
+    final sizes = <String>{};
+    for (final p in _heroImages) {
+      final s = (p['size'] ?? '').toString().trim();
+      if (s.isNotEmpty) sizes.add(s);
+    }
+    final list = sizes.toList()..sort();
+    return list;
   }
 
   // Load more items
@@ -164,24 +278,396 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
     });
   }
 
-  // Toggle search input visibility
-  void _toggleSearchVisibility() {
-    setState(() {
-      _isSearchVisible = !_isSearchVisible;
-      if (_isSearchVisible) {
-        _isPriceRangeVisible = false; // Hide price range when text search is shown
-      }
-    });
-  }
+  void _startPriceSearchFlow() {
+    final isTablet = MediaQuery.of(context).size.width > 600;
 
-  // Toggle price range search visibility
-  void _togglePriceRangeVisibility() {
-    setState(() {
-      _isPriceRangeVisible = !_isPriceRangeVisible;
-      if (_isPriceRangeVisible) {
-        _isSearchVisible = false; // Hide text search when price range is shown
-      }
-    });
+    // Prefill from current filters
+    _minPriceController.text = _minPrice?.toString() ?? '';
+    _maxPriceController.text = _maxPrice?.toString() ?? '';
+
+    int step = 0; // 0=price, 1=color, 2=more
+    String chosenColor = _selectedColor;
+    String chosenCategory = _selectedCategory ?? 'Any';
+    String chosenBrand = _selectedBrand ?? 'Any';
+    String chosenSize = _selectedSize ?? 'Any';
+    String chosenShape = _selectedShape ?? 'Any';
+    String chosenTheme = _selectedTheme ?? 'Any';
+    String chosenGender = _selectedGender ?? 'Any';
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Widget tabButton({
+              required String label,
+              required int index,
+            }) {
+              final selected = step == index;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setModalState(() => step = index),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      vertical: isTablet ? 10 : 9,
+                      horizontal: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected ? AppColors.primary : AppColors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected ? AppColors.primary : AppColors.border,
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: selected ? AppColors.white : AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: isTablet ? 13 : 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            final title = step == 0
+                ? 'Search by price'
+                : step == 1
+                    ? 'Search by color'
+                    : 'More options';
+
+            Widget content;
+            if (step == 0) {
+              content = Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Top navigation buttons (switch forms)
+                  Row(
+                    children: [
+                      tabButton(label: 'Price', index: 0),
+                      const SizedBox(width: 10),
+                      tabButton(label: 'Color', index: 1),
+                      const SizedBox(width: 10),
+                      tabButton(label: 'More', index: 2),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _minPriceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Min price',
+                      prefixText: '\$ ',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _maxPriceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Max price',
+                      prefixText: '\$ ',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Enter price range then press Search.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: isTablet ? 13.0 : 12.0,
+                    ),
+                  ),
+                ],
+              );
+            } else if (step == 1) {
+              const colors = [
+                'All',
+                'Black',
+                'Green',
+                'Blue',
+                'Red',
+                'Brown',
+                'Gray',
+                'White',
+                'Purple',
+              ];
+
+              content = Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top navigation buttons (switch forms)
+                  Row(
+                    children: [
+                      tabButton(label: 'Price', index: 0),
+                      const SizedBox(width: 10),
+                      tabButton(label: 'Color', index: 1),
+                      const SizedBox(width: 10),
+                      tabButton(label: 'More', index: 2),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Choose a color (optional)',
+                    style: TextStyle(
+                      fontSize: isTablet ? 14.0 : 13.0,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: colors.map((c) {
+                      final selected = chosenColor == c;
+                      return ChoiceChip(
+                        label: Text(c),
+                        selected: selected,
+                        selectedColor: AppColors.primary.withOpacity(0.15),
+                        onSelected: (_) => setModalState(() => chosenColor = c),
+                        labelStyle: TextStyle(
+                          color: selected ? AppColors.primary : AppColors.textPrimary,
+                          fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                        ),
+                        side: BorderSide(
+                          color: selected ? AppColors.primary : AppColors.border,
+                          width: selected ? 1.5 : 1,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              );
+            } else {
+              final sizeOptions = <String>['Any', ..._availableSizes()];
+              const brandOptions = ['Any', 'Ray-Ban', 'Oakley', 'Gucci', 'Prada', 'Locs'];
+              const shapeOptions = ['Any', 'Round', 'Square', 'Oval', 'Rectangle'];
+              const themeOptions = ['Any', 'Sport', 'Fashion', 'Classic', 'Luxury'];
+              const genderOptions = ['Any', 'Male', 'Female', 'Babies'];
+              const categoryOptions = ['Any', 'Sunglasses', 'Eyeglasses', 'Contact Lenses', 'Accessories'];
+
+              InputDecoration deco(String label) => InputDecoration(
+                    labelText: label,
+                    border: const OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  );
+
+              content = Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Top navigation buttons (switch forms)
+                  Row(
+                    children: [
+                      tabButton(label: 'Price', index: 0),
+                      const SizedBox(width: 10),
+                      tabButton(label: 'Color', index: 1),
+                      const SizedBox(width: 10),
+                      tabButton(label: 'More', index: 2),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: chosenCategory,
+                    decoration: deco('Category'),
+                    items: categoryOptions
+                        .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                        .toList(),
+                    onChanged: (v) => setModalState(() => chosenCategory = v ?? 'Any'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: chosenBrand,
+                    decoration: deco('Brand'),
+                    items: brandOptions
+                        .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                        .toList(),
+                    onChanged: (v) => setModalState(() => chosenBrand = v ?? 'Any'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: chosenSize,
+                    decoration: deco('Size'),
+                    items: sizeOptions
+                        .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                        .toList(),
+                    onChanged: (v) => setModalState(() => chosenSize = v ?? 'Any'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: chosenShape,
+                    decoration: deco('Shape'),
+                    items: shapeOptions
+                        .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                        .toList(),
+                    onChanged: (v) => setModalState(() => chosenShape = v ?? 'Any'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: chosenTheme,
+                    decoration: deco('Theme'),
+                    items: themeOptions
+                        .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                        .toList(),
+                    onChanged: (v) => setModalState(() => chosenTheme = v ?? 'Any'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: chosenGender,
+                    decoration: deco('Gender'),
+                    items: genderOptions
+                        .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+                        .toList(),
+                    onChanged: (v) => setModalState(() => chosenGender = v ?? 'Any'),
+                  ),
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _showFilterBottomSheet();
+                      },
+                      child: const Text('Advanced filters'),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            // No "continue flow" — search directly from any tab
+            const String primaryButtonText = 'Search';
+
+            final dialogTheme = ThemeData(
+              brightness: Brightness.light,
+              dialogTheme: const DialogThemeData(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
+              ),
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+                surface: Colors.white,
+                onSurface: Colors.black,
+              ),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: Colors.white,
+                labelStyle: const TextStyle(color: Colors.black),
+                hintStyle: const TextStyle(color: Colors.black54),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.black, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.black, width: 2),
+                ),
+              ),
+            );
+
+            return Theme(
+              data: dialogTheme,
+              child: AlertDialog(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
+                title: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: isTablet ? 18.0 : 16.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                content: SizedBox(width: double.maxFinite, child: content),
+                actions: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        height: isTablet ? 46 : 44,
+                        child: ElevatedButton(
+                        onPressed: () async {
+                          final minText = _minPriceController.text.trim();
+                          final maxText = _maxPriceController.text.trim();
+                          final minVal = minText.isEmpty ? null : int.tryParse(minText);
+                          final maxVal = maxText.isEmpty ? null : int.tryParse(maxText);
+
+                          if ((minText.isNotEmpty && minVal == null) || (maxText.isNotEmpty && maxVal == null)) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please enter valid numbers for price'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+                          if (minVal != null && maxVal != null && minVal > maxVal) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Min price cannot be greater than max price'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+
+                          Navigator.of(context).pop();
+
+                          setState(() {
+                            _isLoading = true;
+                            _visibleItems = 4;
+                          });
+
+                          await Future.delayed(const Duration(milliseconds: 600));
+                          if (!mounted) return;
+
+                          setState(() {
+                            _minPrice = minVal;
+                            _maxPrice = maxVal;
+                            _selectedColor = chosenColor;
+                            _selectedCategory = chosenCategory == 'Any' ? null : chosenCategory;
+                            _selectedBrand = chosenBrand == 'Any' ? null : chosenBrand;
+                            _selectedSize = chosenSize == 'Any' ? null : chosenSize;
+                            _selectedShape = chosenShape == 'Any' ? null : chosenShape;
+                            _selectedTheme = chosenTheme == 'Any' ? null : chosenTheme;
+                            _selectedGender = chosenGender == 'Any' ? null : chosenGender;
+                            _isLoading = false;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                        ),
+                        child: Text(primaryButtonText),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                  ],
+                ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   // Handle navigation menu actions
@@ -205,11 +691,14 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
   }
 
   // Show filter bottom sheet
-  void _showFilterBottomSheet() {
+  Future<void> _showFilterBottomSheet() async {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     
-    showModalBottomSheet(
+    if (_isBottomSheetOpen) return;
+    setState(() => _isBottomSheetOpen = true);
+
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isDismissible: true,
@@ -395,6 +884,9 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
         ),
       ),
     );
+
+    if (!mounted) return;
+    setState(() => _isBottomSheetOpen = false);
   }
 
   // Build filter row with checkboxes
@@ -672,179 +1164,92 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
     );
   }
 
-  // Build navigation menu items from array
-  List<Widget> _buildNavMenuItems(bool isTablet) {
-    List<Widget> widgets = [];
-    
-    for (int i = 0; i < _navMenuItems.length; i++) {
-      final item = _navMenuItems[i];
-      final previousItem = i > 0 ? _navMenuItems[i - 1] : null;
-      
-      // Add spacing between items (except for the first item)
-      if (i > 0) {
-        // Reduce space between icon and text (both directions)
-        if ((previousItem?['type'] == 'icon' && item['type'] == 'text') ||
-            (previousItem?['type'] == 'text' && item['type'] == 'icon')) {
-          widgets.add(SizedBox(width: 2));
-        } else if (item['type'] == 'title') {
-          widgets.add(SizedBox(width: 12));
-        } else {
-          widgets.add(SizedBox(width: 8));
-        }
-      }
-      
-      switch (item['type']) {
-        case 'icon':
-          widgets.add(
-            GestureDetector(
-              onTap: () => _handleNavAction(item['action']),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(
-                      item['icon'],
-                      size: isTablet ? 24.0 : 22.0,
-                      color: AppColors.white,
-                    ),
-                  ),
-                  // Badge showing cart count
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '$_cartCount',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isTablet ? 10.0 : 8.0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-          break;
-          
-        case 'title':
-          widgets.add(
-            Expanded(
-              child: Text(
-                item['text'],
-                style: TextStyle(
-                  fontSize: isTablet ? 20.0 : 18.0,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.white,
-                ),
-              ),
-            ),
-          );
-          break;
-          
-        case 'text':
-          widgets.add(
-            GestureDetector(
-              onTap: () => _handleNavAction(item['action']),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Text(
-                  item['text'],
-                  style: TextStyle(
-                    fontSize: isTablet ? 16.0 : 14.0,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.white,
-                  ),
-                ),
-              ),
-            ),
-          );
-          break;
-      }
-    }
-    
-    return widgets;
-  }
-
-  // Handle price range search
-  void _handlePriceRangeSearch() {
-    final minPrice = _minPriceController.text.trim();
-    final maxPrice = _maxPriceController.text.trim();
-    
-    if (minPrice.isEmpty || maxPrice.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter both minimum and maximum prices'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-    
-    final min = int.tryParse(minPrice);
-    final max = int.tryParse(maxPrice);
-    
-    if (min == null || max == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter valid numbers'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-    
-    if (min > max) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Minimum price cannot be greater than maximum price'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-    
-    // Here you would implement the actual price filtering logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Searching for products between \$$min and \$$max'),
-        backgroundColor: AppColors.primary,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
     final isTablet = screenWidth > 600;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final appBarFg = Theme.of(context).appBarTheme.foregroundColor ?? (isDark ? AppColors.white : AppColors.black);
     
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: _buildNavMenuItems(isTablet),
+        shape: const Border(
+          bottom: BorderSide(
+            color: Colors.black,
+            width: 1,
+          ),
         ),
+        elevation: 0,
+        centerTitle: true,
+        titleSpacing: 0,
+        leadingWidth: isTablet ? 90 : 80,
+        leading: Center(
+          child: MouseRegion(
+            onEnter: (_) => setState(() => _isSellHovering = true),
+            onExit: (_) => setState(() => _isSellHovering = false),
+            cursor: SystemMouseCursors.click,
+            child: TextButton(
+              onPressed: () {
+                AppRouter.pushNamed(context, AppRoutes.signin);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: appBarFg,
+                padding: EdgeInsets.zero,
+              ),
+              child: Text(
+                'Sell',
+                style: TextStyle(
+                  color: appBarFg,
+                  fontSize: isTablet ? 18.0 : 16.0,
+                  fontWeight: FontWeight.w600,
+                  decoration: _isSellHovering ? TextDecoration.underline : TextDecoration.none,
+                  decorationColor: appBarFg,
+                ),
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          'Frame Flea',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+            fontSize: 27.0,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Lobster',
+          ),
+        ),
+        actions: [
+          Stack(
+                clipBehavior: Clip.none,
+                children: [
+              IconButton(
+                onPressed: () => _handleNavAction('cart'),
+                icon: const Icon(Icons.shopping_cart),
+              ),
+                  Positioned(
+                right: 6,
+                top: 6,
+                    child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$_cartCount',
+                    style: const TextStyle(
+                          color: Colors.white,
+                      fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          const SizedBox(width: 6),
+        ],
       ),
       body: Column(
         children: [
@@ -1032,126 +1437,15 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
               width: double.infinity,
             ),
             
-            // Search Input (Conditional)
-            if (_isSearchVisible)
+            // Search by Range Price (opens multi-step flow)
               Padding(
-                padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-                    border: Border.all(
-                      color: Colors.grey,
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    style: TextStyle(
-                      fontSize: isTablet ? 16.0 : 14.0,
-                      color: AppColors.textPrimary,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Search sunglasses...',
-                      hintStyle: TextStyle(
-                        color: AppColors.textSecondary.withOpacity(0.6),
-                        fontSize: isTablet ? 16.0 : 14.0,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: AppColors.textSecondary,
-                        size: isTablet ? 24.0 : 22.0,
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          Icons.close,
-                          color: AppColors.textSecondary,
-                          size: isTablet ? 24.0 : 22.0,
-                        ),
-                        onPressed: () {
-                          _toggleSearchVisibility();
-                        },
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: isTablet ? 20.0 : 16.0,
-                        vertical: isTablet ? 18.0 : 14.0,
-                      ),
-                    ),
-                    onChanged: (value) {
-                      // Handle search input
-                    },
-                    onSubmitted: (value) {
-                      // Handle search submission
-                    },
-                  ),
-                ),
+              padding: EdgeInsets.fromLTRB(
+                isTablet ? 24.0 : 16.0,
+                isTablet ? 16.0 : 12.0,
+                isTablet ? 24.0 : 16.0,
+                0,
               ),
-            
-            // Fixed Color Filter Buttons
-            Container(
-              color: AppColors.white,
-              padding: EdgeInsets.only(
-                left: isTablet ? 24.0 : 16.0,
-                right: isTablet ? 24.0 : 16.0,
-                top: _isSearchVisible ? 0 : 5.0,
-                bottom: 0,
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildColorButton('All', AppColors.primary, isTablet, isSelected: _selectedColor == 'All'),
-                    SizedBox(width: 12),
-                    _buildSearchButton(isTablet),
-                    SizedBox(width: 12),
-                    _buildColorButton('Black', Colors.black, isTablet, isSelected: _selectedColor == 'Black'),
-                    SizedBox(width: 12),
-                    _buildColorButton('Green', Colors.green, isTablet, isSelected: _selectedColor == 'Green'),
-                    SizedBox(width: 12),
-                    _buildColorButton('Blue', Colors.blue, isTablet, isSelected: _selectedColor == 'Blue'),
-                    SizedBox(width: 12),
-                    _buildColorButton('Red', Colors.red, isTablet, isSelected: _selectedColor == 'Red'),
-                    SizedBox(width: 12),
-                    _buildColorButton('Brown', Colors.brown, isTablet, isSelected: _selectedColor == 'Brown'),
-                    SizedBox(width: 12),
-                    _buildColorButton('Gray', Colors.grey, isTablet, isSelected: _selectedColor == 'Gray'),
-                    SizedBox(width: 12),
-                    _buildColorButton('White', Colors.white, isTablet, isSelected: _selectedColor == 'White'),
-                    SizedBox(width: 12),
-                    _buildColorButton('Purple', Colors.purple, isTablet, isSelected: _selectedColor == 'Purple'),
-                  ],
-                ),
-              ),
-            ),
-            
-            SizedBox(height: isTablet ? 24.0 : 16.0),
-            
-            // Product Count Display
-            if (_selectedColor != 'All')
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24.0 : 16.0),
-                child: _buildProductCount(isTablet),
-              ),
-            
-            // Search by Range Price Button (when All is selected and search is hidden)
-            if (_selectedColor == 'All' && !_isSearchVisible && !_isPriceRangeVisible)
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24.0 : 16.0),
                 child: _buildPriceRangeButton(isTablet),
-              ),
-            
-            // Price Range Search Inputs (when price range is visible)
-            if (_isPriceRangeVisible)
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24.0 : 16.0),
-                child: _buildPriceRangeInputs(isTablet),
               ),
             
             SizedBox(height: isTablet ? 16.0 : 12.0),
@@ -1174,127 +1468,47 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
           ),
         ],
       ),
+      floatingActionButton: _isBottomSheetOpen
+          ? null
+          : ValueListenableBuilder<ThemeMode>(
+              valueListenable: appThemeMode,
+              builder: (context, mode, _) {
+                IconData icon;
+                String tooltip;
+                switch (mode) {
+                  case ThemeMode.light:
+                    icon = Icons.light_mode;
+                    tooltip = 'Switch to dark mode';
+                    break;
+                  case ThemeMode.dark:
+                    icon = Icons.dark_mode;
+                    tooltip = 'Switch to system mode';
+                    break;
+                  case ThemeMode.system:
+                    icon = Icons.brightness_auto;
+                    tooltip = 'Switch to light mode';
+                    break;
+                }
+                return FloatingActionButton.small(
+                  onPressed: toggleAppThemeMode,
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  tooltip: tooltip,
+                  child: Icon(icon),
+                );
+              },
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget _buildSearchButton(bool isTablet) {
-    return GestureDetector(
-      onTap: () {
-        _toggleSearchVisibility();
-      },
-      child: Container(
-        width: isTablet ? 50.0 : 45.0,
-        height: isTablet ? 40.0 : 36.0,
-        decoration: BoxDecoration(
-          color: _isSearchVisible ? Colors.red : Colors.green.shade700,
-          borderRadius: BorderRadius.circular(4),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(
-          _isSearchVisible ? Icons.close : Icons.search,
-          color: Colors.white,
-          size: isTablet ? 20.0 : 18.0,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildColorButton(String colorName, Color color, bool isTablet, {bool isSelected = false}) {
-    return GestureDetector(
-      onTap: () {
-        _onColorFilterSelected(colorName);
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 16.0 : 12.0,
-          vertical: isTablet ? 10.0 : 8.0,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.8) : color,
-          borderRadius: BorderRadius.circular(4),
-          border: color == Colors.white 
-              ? Border.all(color: AppColors.border, width: 1)
-              : isSelected 
-                  ? Border.all(color: color == AppColors.primary ? Colors.green : Colors.black, width: 2)
-                  : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Text(
-          colorName,
-          style: TextStyle(
-            color: color == Colors.black || color == Colors.blue || color == Colors.brown || color == Colors.purple || color == AppColors.primary
-                ? Colors.white
-                : Colors.black,
-            fontSize: isTablet ? 14.0 : 12.0,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductCount(bool isTablet) {
-    final filteredProducts = _getFilteredProducts();
-    final count = filteredProducts.length;
-    
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 16.0 : 12.0,
-        vertical: isTablet ? 12.0 : 8.0,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.inventory_2,
-            color: AppColors.primary,
-            size: isTablet ? 20.0 : 18.0,
-          ),
-          SizedBox(width: 8),
-          Text(
-            count == 1 ? '1 Glass' : '$count Glasses',
-            style: TextStyle(
-              fontSize: isTablet ? 16.0 : 14.0,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
-          ),
-          Spacer(),
-          Text(
-            'in $_selectedColor',
-            style: TextStyle(
-              fontSize: isTablet ? 14.0 : 12.0,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // (Centered logo title removed — replaced by "Frame" text title)
 
   Widget _buildPriceRangeButton(bool isTablet) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
-        _togglePriceRangeVisibility();
+        _startPriceSearchFlow();
       },
       child: Container(
         width: double.infinity,
@@ -1303,11 +1517,11 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
           vertical: isTablet ? 16.0 : 12.0,
         ),
         decoration: BoxDecoration(
-          color: Colors.green.shade600,
+          color: isDark ? AppColors.white : AppColors.primary,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: Colors.green.withOpacity(0.3),
+              color: Colors.black.withOpacity(isDark ? 0.22 : 0.15),
               blurRadius: 8,
               offset: Offset(0, 2),
             ),
@@ -1318,14 +1532,14 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
           children: [
             Icon(
               Icons.search,
-              color: Colors.white,
+              color: isDark ? AppColors.primary : Colors.white,
               size: isTablet ? 20.0 : 18.0,
             ),
             SizedBox(width: 8),
             Text(
               'Search by Range Price',
               style: TextStyle(
-                color: Colors.white,
+                color: isDark ? AppColors.primary : Colors.white,
                 fontSize: isTablet ? 16.0 : 14.0,
                 fontWeight: FontWeight.w600,
               ),
@@ -1333,154 +1547,12 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
             SizedBox(width: 8),
             Icon(
               Icons.arrow_forward,
-              color: Colors.white,
+              color: isDark ? AppColors.primary : Colors.white,
               size: isTablet ? 18.0 : 16.0,
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPriceRangeInputs(bool isTablet) {
-    return Row(
-      children: [
-        // Min Price Input
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: Colors.grey,
-                width: 1,
-              ),
-            ),
-            child: TextField(
-              controller: _minPriceController,
-              keyboardType: TextInputType.number,
-              style: TextStyle(
-                fontSize: isTablet ? 14.0 : 12.0,
-                color: AppColors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Min Price',
-                hintStyle: TextStyle(
-                  color: AppColors.textSecondary.withOpacity(0.6),
-                  fontSize: isTablet ? 14.0 : 12.0,
-                ),
-                prefixText: '\$ ',
-                prefixStyle: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 12.0 : 10.0,
-                  vertical: isTablet ? 12.0 : 10.0,
-                ),
-              ),
-            ),
-          ),
-        ),
-        
-        SizedBox(width: 12),
-        
-        // Max Price Input
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: Colors.grey,
-                width: 1,
-              ),
-            ),
-            child: TextField(
-              controller: _maxPriceController,
-              keyboardType: TextInputType.number,
-              style: TextStyle(
-                fontSize: isTablet ? 14.0 : 12.0,
-                color: AppColors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Max Price',
-                hintStyle: TextStyle(
-                  color: AppColors.textSecondary.withOpacity(0.6),
-                  fontSize: isTablet ? 14.0 : 12.0,
-                ),
-                prefixText: '\$ ',
-                prefixStyle: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 12.0 : 10.0,
-                  vertical: isTablet ? 12.0 : 10.0,
-                ),
-              ),
-            ),
-          ),
-        ),
-        
-        SizedBox(width: 12),
-        
-        // Search Button
-        GestureDetector(
-          onTap: _handlePriceRangeSearch,
-          child: Container(
-            width: isTablet ? 50.0 : 45.0,
-            height: isTablet ? 50.0 : 45.0,
-            decoration: BoxDecoration(
-              color: Colors.green.shade600,
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.search,
-              color: Colors.white,
-              size: isTablet ? 20.0 : 18.0,
-            ),
-          ),
-        ),
-        
-        SizedBox(width: 12),
-        
-        // Close Button
-        GestureDetector(
-          onTap: () {
-            _togglePriceRangeVisibility();
-          },
-          child: Container(
-            width: isTablet ? 50.0 : 45.0,
-            height: isTablet ? 50.0 : 45.0,
-            decoration: BoxDecoration(
-              color: Colors.red.shade600,
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withOpacity(0.3),
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.close,
-              color: Colors.white,
-              size: isTablet ? 20.0 : 18.0,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -1511,36 +1583,49 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
     
     final filteredProducts = _getFilteredProducts();
     
-    if (filteredProducts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: isTablet ? 80.0 : 60.0,
-              color: AppColors.textSecondary,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'No record to display!',
-              style: TextStyle(
-                fontSize: isTablet ? 18.0 : 16.0,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Try selecting a different color filter',
-              style: TextStyle(
-                fontSize: isTablet ? 14.0 : 12.0,
-                color: AppColors.textSecondary.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-      );
+    // If filters yield no results, show SnackBar but keep cards visible (fallback to all).
+    final bool hasActiveFilters =
+        _selectedColor != 'All' ||
+        _minPrice != null ||
+        _maxPrice != null ||
+        _selectedCategory != null ||
+        _selectedBrand != null ||
+        _selectedSize != null ||
+        _selectedShape != null ||
+        _selectedTheme != null ||
+        _selectedGender != null;
+
+    final List<Map<String, dynamic>> productsToShow =
+        (filteredProducts.isEmpty && hasActiveFilters) ? _heroImages : filteredProducts;
+
+    if (filteredProducts.isEmpty && hasActiveFilters) {
+      final noResultsKey = [
+        _selectedColor,
+        _minPrice?.toString() ?? '',
+        _maxPrice?.toString() ?? '',
+        _selectedCategory ?? '',
+        _selectedBrand ?? '',
+        _selectedSize ?? '',
+        _selectedShape ?? '',
+        _selectedTheme ?? '',
+        _selectedGender ?? '',
+      ].join('|');
+
+      if (_lastNoResultsKeyShown != noResultsKey) {
+        _lastNoResultsKeyShown = noResultsKey;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showBottomNotification('No record to display!');
+        });
+      }
+
+      // Don't show the big empty-state widget; show only the red SnackBar.
+      // Keep rendering the grid (fallback list) below.
+    }
+
+    // Reset so next time empty-state occurs, we can show again.
+    if (filteredProducts.isNotEmpty) {
+      _lastNoResultsKeyShown = null;
     }
     
     return Column(
@@ -1555,14 +1640,14 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
             mainAxisSpacing: 12,
             childAspectRatio: 0.85,
           ),
-          itemCount: _visibleItems > filteredProducts.length ? filteredProducts.length : _visibleItems,
+          itemCount: _visibleItems > productsToShow.length ? productsToShow.length : _visibleItems,
           itemBuilder: (context, index) {
-            return _buildProductCard(filteredProducts[index], isTablet);
+            return _buildProductCard(productsToShow[index], isTablet);
           },
         ),
         
         // Load More Button (if there are more items)
-        if (_visibleItems < filteredProducts.length)
+        if (_visibleItems < productsToShow.length)
           Padding(
             padding: EdgeInsets.only(top: isTablet ? 20.0 : 16.0),
             child: _buildLoadMoreButton(isTablet),
@@ -1572,50 +1657,29 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
   }
 
   Widget _buildLoadMoreButton(bool isTablet) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
-      child: GestureDetector(
-        onTap: _loadMoreItems,
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: isTablet ? 32.0 : 24.0,
-            vertical: isTablet ? 16.0 : 12.0,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.expand_more,
-                color: Colors.white,
-                size: isTablet ? 20.0 : 18.0,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Load More',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: isTablet ? 16.0 : 14.0,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+      child: TextButton(
+        onPressed: _loadMoreItems,
+        style: TextButton.styleFrom(
+          foregroundColor: isDark ? Colors.white : Colors.black,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          minimumSize: const Size(0, 0),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          textStyle: TextStyle(
+            fontSize: isTablet ? 16.0 : 14.0,
+            fontWeight: FontWeight.w600,
+            decoration: TextDecoration.none,
           ),
         ),
+        child: const Text('Load more'),
       ),
     );
   }
 
   Widget _buildProductCard(Map<String, dynamic> product, bool isTablet) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBorderColor = isDark ? AppColors.border : Colors.black;
     return GestureDetector(
       onTap: () {
         AppRouter.pushNamed(
@@ -1636,7 +1700,7 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
             ),
           ],
           border: Border.all(
-            color: AppColors.border,
+            color: cardBorderColor,
             width: 1,
           ),
         ),
@@ -1723,17 +1787,17 @@ class _PublicProductsScreenState extends State<PublicProductsScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.visibility,
+                              Icons.star,
                               size: isTablet ? 18.0 : 16.0,
-                              color: Colors.orange,
+                              color: Colors.amber.shade700,
                             ),
                             SizedBox(width: 2),
                             Text(
-                              '${product['heartCount'] ?? 0}',
+                              _mockStarRatingFor(product).toStringAsFixed(1),
                               style: TextStyle(
                                 fontSize: isTablet ? 14.0 : 12.0,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.orange,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ],

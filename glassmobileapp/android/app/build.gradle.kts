@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.example.glassmobileapp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Required by image_picker_android & flutter_plugin_android_lifecycle
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -28,6 +29,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // For release APKs, only ship ARM ABIs.
+        // (x86/x86_64 are emulator-focused and can fail on some NDK/CMake setups.)
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
     }
 
     buildTypes {

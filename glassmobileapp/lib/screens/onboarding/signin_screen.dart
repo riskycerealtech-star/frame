@@ -89,6 +89,12 @@ class _SignInScreenState extends State<SignInScreen>
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    // Mock admin login
+    if (email.toLowerCase() == 'admin@frame.com' && password == 'admin') {
+      AppRouter.pushReplacementNamed(context, AppRoutes.adminDashboard);
+      return;
+    }
+
     // Validate inputs
     if (email.isEmpty || password.isEmpty) {
       _showSnackBar('Please fill in all fields');
@@ -157,13 +163,13 @@ class _SignInScreenState extends State<SignInScreen>
                 children: [
                   GestureDetector(
                     onTap: () {
-                      AppRouter.pushReplacementNamed(context, AppRoutes.welcome);
+                      AppRouter.pushReplacementNamed(context, AppRoutes.publishProducts);
                     },
                     child: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD93211),
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -273,7 +279,11 @@ class _SignInScreenState extends State<SignInScreen>
                                     TextFormField(
                                       controller: _emailController,
                                       keyboardType: TextInputType.emailAddress,
-                                      style: TextStyle(fontSize: inputFontSize),
+                                      cursorColor: Colors.black,
+                                      style: TextStyle(
+                                        fontSize: inputFontSize,
+                                        color: Colors.black,
+                                      ),
                                       decoration: InputDecoration(
                                         hintText: 'Email Address',
                                         hintStyle: TextStyle(
@@ -283,14 +293,35 @@ class _SignInScreenState extends State<SignInScreen>
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(8),
                                           borderSide: BorderSide(
-                                            color: AppColors.border,
+                                            color: Colors.black,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                            color: Colors.black,
                                             width: 1,
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(8),
                                           borderSide: BorderSide(
-                                            color: AppColors.primary,
+                                            color: Colors.black,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        errorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                            color: Colors.red,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        focusedErrorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                            color: Colors.red,
                                             width: 2,
                                           ),
                                         ),
@@ -331,7 +362,11 @@ class _SignInScreenState extends State<SignInScreen>
                                     TextFormField(
                                       controller: _passwordController,
                                       obscureText: !_isPasswordVisible,
-                                      style: TextStyle(fontSize: inputFontSize),
+                                      cursorColor: Colors.black,
+                                      style: TextStyle(
+                                        fontSize: inputFontSize,
+                                        color: Colors.black,
+                                      ),
                                       decoration: InputDecoration(
                                         hintText: 'Password',
                                         hintStyle: TextStyle(
@@ -341,14 +376,35 @@ class _SignInScreenState extends State<SignInScreen>
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(8),
                                           borderSide: BorderSide(
-                                            color: AppColors.border,
+                                            color: Colors.black,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                            color: Colors.black,
                                             width: 1,
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(8),
                                           borderSide: BorderSide(
-                                            color: AppColors.primary,
+                                            color: Colors.black,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        errorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                            color: Colors.red,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        focusedErrorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                            color: Colors.red,
                                             width: 2,
                                           ),
                                         ),

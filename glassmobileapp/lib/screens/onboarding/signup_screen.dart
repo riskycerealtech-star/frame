@@ -4,7 +4,6 @@ import 'dart:convert';
 import '../../config/app_router.dart';
 import '../../constants/routes.dart';
 import '../../constants/colors.dart';
-import '../../constants/app_constants.dart';
 import '../../constants/api_constants.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -22,39 +21,24 @@ class _SignUpScreenState extends State<SignUpScreen>
   late Animation<double> _illustrationAnimation;
   late Animation<double> _formAnimation;
 
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _rePasswordController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
   
   String? _selectedGender;
-  String? _selectedOccupation;
-  String? _selectedSourceOfFunds;
-  String? _selectedTimezone;
   
   bool _isPasswordVisible = false;
   bool _isRePasswordVisible = false;
   bool _isLoading = false;
   
   // Dropdown options
-  final List<String> _genderOptions = ['MALE', 'FEMALE', 'OTHER'];
-  final List<String> _occupationOptions = ['EMPLOYED', 'UNEMPLOYED', 'STUDENT', 'RETIRED', 'SELF_EMPLOYED'];
-  final List<String> _sourceOfFundsOptions = ['SALARY', 'BUSINESS', 'INVESTMENT', 'GIFT', 'OTHER'];
-  final List<String> _timezoneOptions = [
-    'America/New_York',
-    'America/Chicago',
-    'America/Denver',
-    'America/Los_Angeles',
-    'Europe/London',
-    'Europe/Paris',
-    'Asia/Tokyo',
-    'Asia/Dubai',
-    'Australia/Sydney',
-    'UTC'
-  ];
+  final List<String> _genderOptions = ['Male', 'Female', 'N/A'];
 
   @override
   void initState() {
@@ -105,7 +89,6 @@ class _SignUpScreenState extends State<SignUpScreen>
     _phoneController.dispose();
     _passwordController.dispose();
     _rePasswordController.dispose();
-    _locationController.dispose();
     super.dispose();
   }
 
@@ -128,14 +111,25 @@ class _SignUpScreenState extends State<SignUpScreen>
 
   void _handleSignUp() async {
     print('🔵 [SIGNUP] Signup button clicked');
+
+    // Show field-level validation messages after first submit attempt
+    setState(() {
+      _autovalidateMode = AutovalidateMode.always;
+    });
+
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      print('❌ [SIGNUP] Form validation failed');
+      return;
+    }
     
     final email = _emailController.text.trim();
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
     final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
-    final rePassword = _rePasswordController.text.trim();
-    final location = _locationController.text.trim();
+    // Kept for backend compatibility (backend expects a location field)
+    const location = 'UNKNOWN';
 
     print('🔵 [SIGNUP] Form data collected:');
     print('   - Email: $email');
@@ -143,55 +137,6 @@ class _SignUpScreenState extends State<SignUpScreen>
     print('   - Last Name: $lastName');
     print('   - Phone: $phone');
     print('   - Gender: $_selectedGender');
-    print('   - Location: $location');
-    print('   - Occupation: $_selectedOccupation');
-    print('   - Source of Funds: $_selectedSourceOfFunds');
-    print('   - Timezone: $_selectedTimezone');
-
-    // Validate required inputs
-    if (email.isEmpty || firstName.isEmpty || lastName.isEmpty || 
-        phone.isEmpty || password.isEmpty || rePassword.isEmpty ||
-        _selectedGender == null || location.isEmpty) {
-      print('❌ [SIGNUP] Validation failed: Missing required fields');
-      _showSnackBar('Please fill in all required fields');
-      return;
-    }
-
-    if (!_isValidEmail(email)) {
-      print('❌ [SIGNUP] Validation failed: Invalid email format');
-      _showSnackBar('Please enter a valid email address');
-      return;
-    }
-
-    if (!_isValidName(firstName)) {
-      print('❌ [SIGNUP] Validation failed: First name too short');
-      _showSnackBar('First name must be at least 2 characters');
-      return;
-    }
-
-    if (!_isValidName(lastName)) {
-      print('❌ [SIGNUP] Validation failed: Last name too short');
-      _showSnackBar('Last name must be at least 2 characters');
-      return;
-    }
-
-    if (!_isValidPhone(phone)) {
-      print('❌ [SIGNUP] Validation failed: Invalid phone format');
-      _showSnackBar('Please enter a valid phone number (+1234567890)');
-      return;
-    }
-
-    if (!_isValidPassword(password)) {
-      print('❌ [SIGNUP] Validation failed: Password too short');
-      _showSnackBar('Password must be at least 6 characters');
-      return;
-    }
-
-    if (password != rePassword) {
-      print('❌ [SIGNUP] Validation failed: Passwords do not match');
-      _showSnackBar('Passwords do not match');
-      return;
-    }
 
     print('✅ [SIGNUP] All validations passed');
     print('🔄 [SIGNUP] Setting loading state to true');
@@ -210,9 +155,6 @@ class _SignUpScreenState extends State<SignUpScreen>
         'password': password,
         'gender': _selectedGender!,
         'location': location,
-        if (_selectedOccupation != null) 'occupation': _selectedOccupation,
-        if (_selectedSourceOfFunds != null) 'sourceOfFunds': _selectedSourceOfFunds,
-        if (_selectedTimezone != null) 'timezone': _selectedTimezone,
       };
 
       // Make API call
@@ -277,16 +219,6 @@ class _SignUpScreenState extends State<SignUpScreen>
           print('   - Email: $email');
           print('   - Phone: $phone');
           print('   - Gender: $_selectedGender');
-          print('   - Location: $location');
-          if (_selectedOccupation != null) {
-            print('   - Occupation: $_selectedOccupation');
-          }
-          if (_selectedSourceOfFunds != null) {
-            print('   - Source of Funds: $_selectedSourceOfFunds');
-          }
-          if (_selectedTimezone != null) {
-            print('   - Timezone: $_selectedTimezone');
-          }
           print('   ✅ All data successfully saved to database!');
           
         } catch (e) {
@@ -401,46 +333,37 @@ class _SignUpScreenState extends State<SignUpScreen>
     
     return Scaffold(
       backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header with back button
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      AppRouter.pop(context);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD93211),
-                        shape: BoxShape.circle,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary, // mainColorApp (black)
+        foregroundColor: AppColors.white,
+        elevation: 0,
+        centerTitle: false,
+        titleSpacing: 8,
+        leading: IconButton(
+          onPressed: () => AppRouter.pop(context),
+          icon: const Icon(Icons.arrow_back),
                       ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
+        title: const Text(
+          'Sign Up',
+          style: TextStyle(
+            fontSize: 18,
+            fontFamily: 'Times New Roman',
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
             // Main content area
             Expanded(
               child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
                     children: [
-                      // Illustration Section
+                    // Illustration Section (full-width, attached to background)
                       SizedBox(
-                        height: isTablet ? screenHeight * 0.2 : screenHeight * 0.15,
+                      width: double.infinity,
+                      height: isTablet ? screenHeight * 0.22 : screenHeight * 0.18,
                         child: AnimatedBuilder(
                           animation: _illustrationAnimation,
                           builder: (context, child) {
@@ -454,12 +377,17 @@ class _SignUpScreenState extends State<SignUpScreen>
                       
                       SizedBox(height: isTablet ? 30.0 : 20.0),
                       
-                      // Form Section
-                      AnimatedBuilder(
+                    // Form Section (padded)
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      child: AnimatedBuilder(
                         animation: _formAnimation,
                         builder: (context, child) {
                           return Opacity(
                             opacity: _formAnimation.value,
+                            child: Form(
+                              key: _formKey,
+                              autovalidateMode: _autovalidateMode,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -501,57 +429,43 @@ class _SignUpScreenState extends State<SignUpScreen>
                                 
                                 SizedBox(height: isTablet ? 32.0 : 24.0),
                                 
-                                // Email Field
-                                _buildTextField(
-                                  controller: _emailController,
-                                  label: 'Email',
-                                  hintText: 'example@email.com',
-                                  keyboardType: TextInputType.emailAddress,
-                                  labelFontSize: labelFontSize,
-                                  inputFontSize: inputFontSize,
-                                  isTablet: isTablet,
-                                ),
-                                
-                                SizedBox(height: isTablet ? 20.0 : 16.0),
-                                
-                                // First Name Field
+                                // First NAME
                                 _buildTextField(
                                   controller: _firstNameController,
-                                  label: 'First Name',
-                                  hintText: 'First Name',
+                                  label: 'First NAME',
+                                  hintText: 'First name',
                                   labelFontSize: labelFontSize,
                                   inputFontSize: inputFontSize,
                                   isTablet: isTablet,
+                                  validator: (value) {
+                                    final v = (value ?? '').trim();
+                                    if (v.isEmpty) return 'First name is required';
+                                    if (!_isValidName(v)) return 'First name must be at least 2 characters';
+                                    return null;
+                                  },
                                 ),
                                 
                                 SizedBox(height: isTablet ? 20.0 : 16.0),
                                 
-                                // Last Name Field
+                                // Last Name
                                 _buildTextField(
                                   controller: _lastNameController,
                                   label: 'Last Name',
-                                  hintText: 'Last Name',
+                                  hintText: 'Last name',
                                   labelFontSize: labelFontSize,
                                   inputFontSize: inputFontSize,
                                   isTablet: isTablet,
+                                  validator: (value) {
+                                    final v = (value ?? '').trim();
+                                    if (v.isEmpty) return 'Last name is required';
+                                    if (!_isValidName(v)) return 'Last name must be at least 2 characters';
+                                    return null;
+                                  },
                                 ),
                                 
                                 SizedBox(height: isTablet ? 20.0 : 16.0),
                                 
-                                // Phone Field
-                                _buildTextField(
-                                  controller: _phoneController,
-                                  label: 'Phone Number',
-                                  hintText: '+1234567890',
-                                  keyboardType: TextInputType.phone,
-                                  labelFontSize: labelFontSize,
-                                  inputFontSize: inputFontSize,
-                                  isTablet: isTablet,
-                                ),
-                                
-                                SizedBox(height: isTablet ? 20.0 : 16.0),
-                                
-                                // Gender Dropdown
+                                // Gender
                                 _buildDropdownField(
                                   label: 'Gender',
                                   value: _selectedGender,
@@ -564,18 +478,50 @@ class _SignUpScreenState extends State<SignUpScreen>
                                   labelFontSize: labelFontSize,
                                   inputFontSize: inputFontSize,
                                   isTablet: isTablet,
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Gender is required';
+                                    }
+                                    return null;
+                                  },
                                 ),
                                 
                                 SizedBox(height: isTablet ? 20.0 : 16.0),
                                 
-                                // Location Field
+                                // Email
                                 _buildTextField(
-                                  controller: _locationController,
-                                  label: 'Location',
-                                  hintText: 'City, State, Country',
+                                  controller: _emailController,
+                                  label: 'Email',
+                                  hintText: 'example@email.com',
+                                  keyboardType: TextInputType.emailAddress,
                                   labelFontSize: labelFontSize,
                                   inputFontSize: inputFontSize,
                                   isTablet: isTablet,
+                                  validator: (value) {
+                                    final v = (value ?? '').trim();
+                                    if (v.isEmpty) return 'Email is required';
+                                    if (!_isValidEmail(v)) return 'Enter a valid email address';
+                                    return null;
+                                  },
+                                ),
+                                
+                                SizedBox(height: isTablet ? 20.0 : 16.0),
+
+                                // Phone Number
+                                _buildTextField(
+                                  controller: _phoneController,
+                                  label: 'Phone Number',
+                                  hintText: '+1234567890',
+                                  keyboardType: TextInputType.phone,
+                                  labelFontSize: labelFontSize,
+                                  inputFontSize: inputFontSize,
+                                  isTablet: isTablet,
+                                  validator: (value) {
+                                    final v = (value ?? '').trim();
+                                    if (v.isEmpty) return 'Phone number is required';
+                                    if (!_isValidPhone(v)) return 'Use format like +1234567890';
+                                    return null;
+                                  },
                                 ),
                                 
                                 SizedBox(height: isTablet ? 20.0 : 16.0),
@@ -594,15 +540,21 @@ class _SignUpScreenState extends State<SignUpScreen>
                                   labelFontSize: labelFontSize,
                                   inputFontSize: inputFontSize,
                                   isTablet: isTablet,
+                                  validator: (value) {
+                                    final v = (value ?? '').trim();
+                                    if (v.isEmpty) return 'Password is required';
+                                    if (!_isValidPassword(v)) return 'Password must be at least 6 characters';
+                                    return null;
+                                  },
                                 ),
                                 
                                 SizedBox(height: isTablet ? 20.0 : 16.0),
                                 
-                                // Re-Password Field
+                                // Re-Password
                                 _buildPasswordField(
                                   controller: _rePasswordController,
-                                  label: 'Re-Enter Password',
-                                  hintText: 'Re-Enter Password',
+                                  label: 'Re-Password',
+                                  hintText: 'Re-Password',
                                   isVisible: _isRePasswordVisible,
                                   onToggleVisibility: () {
                                     setState(() {
@@ -612,60 +564,14 @@ class _SignUpScreenState extends State<SignUpScreen>
                                   labelFontSize: labelFontSize,
                                   inputFontSize: inputFontSize,
                                   isTablet: isTablet,
-                                ),
-                                
-                                SizedBox(height: isTablet ? 20.0 : 16.0),
-                                
-                                // Occupation Dropdown (Optional)
-                                _buildDropdownField(
-                                  label: 'Occupation (Optional)',
-                                  value: _selectedOccupation,
-                                  items: _occupationOptions,
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      _selectedOccupation = value;
-                                    });
+                                  validator: (value) {
+                                    final v = (value ?? '').trim();
+                                    if (v.isEmpty) return 'Re-Password is required';
+                                    if (v != _passwordController.text.trim()) {
+                                      return 'Passwords do not match';
+                                    }
+                                    return null;
                                   },
-                                  labelFontSize: labelFontSize,
-                                  inputFontSize: inputFontSize,
-                                  isTablet: isTablet,
-                                  isRequired: false,
-                                ),
-                                
-                                SizedBox(height: isTablet ? 20.0 : 16.0),
-                                
-                                // Source of Funds Dropdown (Optional)
-                                _buildDropdownField(
-                                  label: 'Source of Funds (Optional)',
-                                  value: _selectedSourceOfFunds,
-                                  items: _sourceOfFundsOptions,
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      _selectedSourceOfFunds = value;
-                                    });
-                                  },
-                                  labelFontSize: labelFontSize,
-                                  inputFontSize: inputFontSize,
-                                  isTablet: isTablet,
-                                  isRequired: false,
-                                ),
-                                
-                                SizedBox(height: isTablet ? 20.0 : 16.0),
-                                
-                                // Timezone Dropdown (Optional)
-                                _buildDropdownField(
-                                  label: 'Timezone (Optional)',
-                                  value: _selectedTimezone,
-                                  items: _timezoneOptions,
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      _selectedTimezone = value;
-                                    });
-                                  },
-                                  labelFontSize: labelFontSize,
-                                  inputFontSize: inputFontSize,
-                                  isTablet: isTablet,
-                                  isRequired: false,
                                 ),
                                 
                                 SizedBox(height: isTablet ? 32.0 : 24.0),
@@ -711,7 +617,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                                 Center(
                                   child: GestureDetector(
                                     onTap: () {
-                                      AppRouter.pop(context);
+                                      AppRouter.pushNamed(context, AppRoutes.signin);
                                     },
                                     child: RichText(
                                       text: TextSpan(
@@ -728,16 +634,6 @@ class _SignUpScreenState extends State<SignUpScreen>
                                               fontWeight: FontWeight.w600,
                                               decoration: TextDecoration.underline,
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
                       ),
                     ],
                   ),
@@ -745,27 +641,27 @@ class _SignUpScreenState extends State<SignUpScreen>
               ),
             ),
             
-            // Fixed footer at bottom
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: AnimatedBuilder(
-                animation: _formAnimation,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _formAnimation.value,
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: isTablet ? 20.0 : 16.0),
+                                SizedBox(height: isTablet ? 16.0 : 12.0),
+
+                                Center(
                       child: Text(
-                        AppConstants.versionText,
+                                    'Version 1.0',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: isTablet ? 14.0 : 12.0,
                           fontWeight: FontWeight.w500,
                         ),
+                                  ),
+                                ),
+                              ],
                       ),
                     ),
                   );
                 },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -782,6 +678,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     required double inputFontSize,
     required bool isTablet,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -809,6 +706,7 @@ class _SignUpScreenState extends State<SignUpScreen>
           controller: controller,
           keyboardType: keyboardType ?? TextInputType.text,
           style: TextStyle(fontSize: inputFontSize),
+          validator: validator,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(
@@ -848,6 +746,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     required double labelFontSize,
     required double inputFontSize,
     required bool isTablet,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -875,6 +774,7 @@ class _SignUpScreenState extends State<SignUpScreen>
           controller: controller,
           obscureText: !isVisible,
           style: TextStyle(fontSize: inputFontSize),
+          validator: validator,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(
@@ -922,6 +822,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     required double inputFontSize,
     required bool isTablet,
     bool isRequired = true,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -949,6 +850,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: value,
+          validator: validator,
           items: items.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
@@ -999,33 +901,15 @@ class _SignUpScreenState extends State<SignUpScreen>
   }
 
   Widget _buildIllustration() {
-    return SizedBox(
+    return Image.asset(
+      'asset/images/Signup.png',
       width: double.infinity,
       height: double.infinity,
-      child: Center(
-        child: ClipOval(
-          child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.2),
-                  blurRadius: 15,
-                  spreadRadius: 3,
-                ),
-              ],
-            ),
-            child: Image.asset(
-              'asset/images/signup.jpg',
               fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
                   child: const Center(
                     child: Icon(
                       Icons.person_add,
@@ -1035,10 +919,6 @@ class _SignUpScreenState extends State<SignUpScreen>
                   ),
                 );
               },
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

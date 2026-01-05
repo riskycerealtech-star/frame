@@ -25,6 +25,8 @@ class _CommissionDialogState extends State<CommissionDialog> {
     final isTablet = screenSize.width > 600;
 
     return Dialog(
+      backgroundColor: AppColors.white,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -32,6 +34,10 @@ class _CommissionDialogState extends State<CommissionDialog> {
         constraints: BoxConstraints(
           maxHeight: screenSize.height * 0.6,
           maxWidth: isTablet ? 500 : screenSize.width * 0.9,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

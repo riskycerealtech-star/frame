@@ -8,14 +8,18 @@ import '../screens/onboarding/public_products_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home/home_screen.dart';
-import '../screens/profile/profile_screen.dart';
+import '../screens/home/cart_screen.dart';
+import '../screens/home/my_market_screen.dart';
+import '../screens/home/my_profile_screen.dart';
 import '../screens/product/list_screen.dart';
 import '../screens/products/product_details_screen.dart';
+import '../screens/products/buy_frame_screen.dart';
 import '../screens/products/product_register_screen.dart';
 import '../screens/product/create_screen.dart';
 import '../screens/marketplace/browse_screen.dart';
 import '../screens/orders/my_orders_screen.dart';
 import '../screens/admin/dashboard_screen.dart';
+import '../screens/admin/analytics/statistics_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -67,10 +71,22 @@ class AppRouter {
           builder: (_) => const HomeScreen(),
           settings: settings,
         );
+
+      case AppRoutes.cart:
+        return MaterialPageRoute(
+          builder: (_) => const CartScreen(),
+          settings: settings,
+        );
         
       case AppRoutes.profile:
         return MaterialPageRoute(
-          builder: (_) => const ProfileScreen(),
+          builder: (_) => const MyProfileScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.myMarket:
+        return MaterialPageRoute(
+          builder: (_) => const MyMarketScreen(),
           settings: settings,
         );
         
@@ -85,6 +101,14 @@ class AppRouter {
         final product = args?['product'] as Map<String, dynamic>?;
         return MaterialPageRoute(
           builder: (_) => ProductDetailsScreen(product: product ?? {}),
+          settings: settings,
+        );
+
+      case AppRoutes.buyFrame:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final product = args?['product'] as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => BuyFrameScreen(product: product ?? {}),
           settings: settings,
         );
         
@@ -203,10 +227,7 @@ class AppRouter {
         
       case AppRoutes.adminAnalytics:
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('Admin Analytics')),
-            body: const Center(child: Text('Admin analytics functionality coming soon')),
-          ),
+          builder: (_) => const StatisticsScreen(),
           settings: settings,
         );
         

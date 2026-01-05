@@ -8,8 +8,11 @@ class AppRoutes {
   static const String register = '/register';
   static const String home = '/home';
   static const String profile = '/profile';
+  static const String myMarket = '/my-market';
+  static const String cart = '/cart';
   static const String productList = '/products';
   static const String productDetails = '/product-details';
+  static const String buyFrame = '/buy-frame';
   static const String productRegister = '/product-register';
   static const String createProduct = '/create-product';
   static const String editProduct = '/edit-product';

@@ -16,8 +16,19 @@ from middleware.error_handler import (
     general_exception_handler
 )
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables (lazy initialization - only if database is available)
+def init_db():
+    """Initialize database tables if database is available"""
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✓ Database tables initialized successfully")
+    except Exception as e:
+        print(f"⚠ Warning: Could not connect to database: {e}")
+        print("  The app will start, but database operations will fail until PostgreSQL is running.")
+        print("  To start PostgreSQL, run: docker-compose up -d postgres")
+
+# Try to initialize database, but don't fail if it's not available
+init_db()
 
 # FastAPI app configuration
 app = FastAPI(

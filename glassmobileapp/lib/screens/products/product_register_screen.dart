@@ -2,9 +2,24 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../constants/colors.dart';
-import '../../constants/app_constants.dart';
 import '../../services/ai/sunglasses_validation_service.dart';
-import '../../widgets/common/back_button_widget.dart';
+
+enum _FrameSide { front, left, right, top }
+
+extension _FrameSideX on _FrameSide {
+  String get label {
+    switch (this) {
+      case _FrameSide.front:
+        return 'Front';
+      case _FrameSide.left:
+        return 'Left';
+      case _FrameSide.right:
+        return 'Right';
+      case _FrameSide.top:
+        return 'Top';
+    }
+  }
+}
 
 class ProductRegisterScreen extends StatefulWidget {
   const ProductRegisterScreen({super.key});
@@ -16,17 +31,42 @@ class ProductRegisterScreen extends StatefulWidget {
 class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
-  String? _selectedImagePath;
-  File? _selectedImageFile;
+  final Map<_FrameSide, File?> _sideImages = {
+    for (final side in _FrameSide.values) side: null,
+  };
+  final Map<_FrameSide, SunglassesValidationResult?> _sideValidation = {
+    for (final side in _FrameSide.values) side: null,
+  };
+  _FrameSide _activeSide = _FrameSide.front;
+  final List<_FrameSide> _uploadOrder = const [
+    _FrameSide.front, // first: fill big preview
+    _FrameSide.top,   // then: start with top
+    _FrameSide.left,
+    _FrameSide.right,
+  ];
   final bool _isLoading = false;
   bool _isValidating = false;
   String? _validationMessage;
-  SunglassesValidationResult? _lastValidationResult;
   bool _isLowConfidenceRejection = false;
-  DateTime? _selectedDate;
   String _description = '';
-  // Commission rate of 5%
-  static const double _commissionPercent = 0.05;
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
+
+  final TextEditingController _flameNameController = TextEditingController();
+  final TextEditingController _flameDesignerController = TextEditingController();
+  final TextEditingController _flameBrandController = TextEditingController();
+  final TextEditingController _flameColorController = TextEditingController();
+  final TextEditingController _flamePriceController = TextEditingController();
+  BuildContext? _tabsContext;
+
+  @override
+  void dispose() {
+    _flameNameController.dispose();
+    _flameDesignerController.dispose();
+    _flameBrandController.dispose();
+    _flameColorController.dispose();
+    _flamePriceController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,50 +75,66 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
     final isTablet = screenWidth > 600;
     
     return Scaffold(
+      backgroundColor: AppColors.white,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            // Back Button
-            Container(
-              width: 40,
-              height: 40,
-              margin: EdgeInsets.only(left: 16),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+        centerTitle: false,
+        titleSpacing: 8,
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back),
               ),
-              child: Center(
-                child: BackButtonWidget(
+        title: const Text(
+                'Publish Frame',
+          style: TextStyle(fontSize: 18),
+        ),
+      ),
+      body: DefaultTabController(
+        length: 2,
+        child: Builder(
+          builder: (tabCtx) {
+            // Capture a context that is *inside* DefaultTabController
+            _tabsContext = tabCtx;
+            return Column(
+              children: [
+                Material(
                   color: AppColors.white,
-                  size: 20,
-                  padding: EdgeInsets.zero,
+                  child: TabBar(
+                    indicatorColor: AppColors.primary,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    tabs: const [
+                      Tab(text: 'Details'),
+                      Tab(text: 'AI Validation'),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-            
-            SizedBox(width: 12),
-            
-            // Title Text
-            Expanded(
-                      child: Text(
-                'Publish Flame',
-                        style: TextStyle(
-                  fontSize: isTablet ? 20.0 : 18.0,
-                  color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildDetailsTab(tabCtx, isTablet),
+                      _buildAiValidationTab(isTablet),
+                    ],
                       ),
                     ),
           ],
+            );
+          },
         ),
       ),
-      body: SingleChildScrollView(
+    );
+  }
+
+  Widget _buildDetailsTab(BuildContext context, bool isTablet) {
+    return Container(
+      color: AppColors.white,
+      child: SingleChildScrollView(
         padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
         child: Form(
           key: _formKey,
+          autovalidateMode: _autovalidateMode,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -94,6 +150,11 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
               ),
               
               SizedBox(height: isTablet ? 24.0 : 16.0),
+
+              // --- Existing form fields + image selection (unchanged UI) ---
+              // NOTE: We keep your existing widget tree as-is by reusing it from the current build.
+              // For readability, we just call the existing private builder that already exists in this file.
+              // Since the original code was inline, we keep it inline below.
               
               // City/Town Input Field
               Column(
@@ -127,6 +188,14 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                   
                   // Input Field
                   TextFormField(
+                    controller: _flameNameController,
+                    cursorColor: Colors.black,
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Flame name is required';
+                      }
+                      return null;
+                    },
                     decoration: InputDecoration(
                       hintText: 'Enter flame name',
                       hintStyle: TextStyle(
@@ -136,21 +205,21 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.primary,
+                          color: Colors.black,
                           width: 2,
                         ),
                       ),
@@ -161,7 +230,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                     ),
                     style: TextStyle(
                       fontSize: isTablet ? 14.0 : 12.0,
-                      color: AppColors.textPrimary,
+                      color: Colors.black,
                     ),
                   ),
                 ],
@@ -201,6 +270,14 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                   
                   // Input Field
                   TextFormField(
+                    controller: _flameDesignerController,
+                    cursorColor: Colors.black,
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Flame designer is required';
+                      }
+                      return null;
+                    },
                     decoration: InputDecoration(
                       hintText: 'Enter flame designer',
                       hintStyle: TextStyle(
@@ -210,21 +287,21 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.primary,
+                          color: Colors.black,
                           width: 2,
                         ),
                       ),
@@ -235,7 +312,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                     ),
                 style: TextStyle(
                       fontSize: isTablet ? 14.0 : 12.0,
-                  color: AppColors.textPrimary,
+                      color: Colors.black,
                       ),
                     ),
                   ],
@@ -275,6 +352,14 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                   
                   // Input Field
                   TextFormField(
+                    controller: _flameBrandController,
+                    cursorColor: Colors.black,
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Flame brand is required';
+                      }
+                      return null;
+                    },
                     decoration: InputDecoration(
                       hintText: 'Enter flame bland',
                       hintStyle: TextStyle(
@@ -284,21 +369,21 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.primary,
+                          color: Colors.black,
                           width: 2,
                         ),
                       ),
@@ -309,7 +394,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                     ),
                     style: TextStyle(
                       fontSize: isTablet ? 14.0 : 12.0,
-                      color: AppColors.textPrimary,
+                      color: Colors.black,
                     ),
                   ),
                 ],
@@ -347,6 +432,14 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                   SizedBox(height: isTablet ? 12.0 : 8.0),
                   // Input Field
                   TextFormField(
+                    controller: _flameColorController,
+                    cursorColor: Colors.black,
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Flame color is required';
+                      }
+                      return null;
+                    },
                     decoration: InputDecoration(
                       hintText: 'Enter flame color',
                       hintStyle: TextStyle(
@@ -356,21 +449,21 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.primary,
+                          color: Colors.black,
                           width: 2,
                         ),
                       ),
@@ -381,7 +474,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                     ),
                     style: TextStyle(
                       fontSize: isTablet ? 14.0 : 12.0,
-                      color: AppColors.textPrimary,
+                      color: Colors.black,
                     ),
                   ),
                 ],
@@ -419,6 +512,17 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                   SizedBox(height: isTablet ? 12.0 : 8.0),
                   // Input Field
                   TextFormField(
+                    controller: _flamePriceController,
+                    cursorColor: Colors.black,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    validator: (value) {
+                      final v = (value ?? '').trim();
+                      if (v.isEmpty) return 'Price is required';
+                      final parsed = double.tryParse(v);
+                      if (parsed == null) return 'Enter a valid price';
+                      if (parsed <= 0) return 'Price must be greater than 0';
+                      return null;
+                    },
                     decoration: InputDecoration(
                       hintText: 'Enter price',
                       hintStyle: TextStyle(
@@ -428,21 +532,21 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.border,
+                          color: Colors.black,
                           width: 1,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: AppColors.primary,
+                          color: Colors.black,
                           width: 2,
                         ),
                       ),
@@ -453,14 +557,13 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                     ),
                     style: TextStyle(
                       fontSize: isTablet ? 14.0 : 12.0,
-                      color: AppColors.textPrimary,
+                      color: Colors.black,
                     ),
                   ),
                 ],
               ),
               
               SizedBox(height: isTablet ? 16.0 : 12.0),
-            
 
               // Description Link
               Align(
@@ -481,240 +584,229 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                 ),
               ),
               
-              SizedBox(height: isTablet ? 24.0 : 16.0),
-              
-              // Image Upload Section
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(isTablet ? 24.0 : 20.0),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
-                  border: Border.all(
-                    color: AppColors.border,
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Click to select your ',
+              SizedBox(height: isTablet ? 18.0 : 14.0),
+              Text(
+                'Continue to AI Validation to upload and validate your image.',
                             style: TextStyle(
-                              fontSize: isTablet ? 14.0 : 12.0,
+                  fontSize: isTablet ? 13.0 : 12.0,
                               color: AppColors.textSecondary,
                             ),
-                          ),
-                          TextSpan(
-                            text: 'flame image',
+                textAlign: TextAlign.center,
+              ),
+
+              SizedBox(height: isTablet ? 16.0 : 12.0),
+
+              // Continue to AI Validation
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final isValid = _formKey.currentState?.validate() ?? false;
+                    if (!isValid) {
+                      setState(() {
+                        _autovalidateMode = AutovalidateMode.always;
+                      });
+                      return;
+                    }
+
+                    final tabController = DefaultTabController.of(context);
+                    tabController.animateTo(1);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    padding: EdgeInsets.symmetric(
+                      vertical: isTablet ? 16.0 : 14.0,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Continue',
                       style: TextStyle(
-                              fontSize: isTablet ? 14.0 : 12.0,
-                              color: Colors.red,
-                            ),
-                          ),
-                          TextSpan(
-                            text: ' from gallery',
-                      style: TextStyle(
-                        fontSize: isTablet ? 14.0 : 12.0,
-                        color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
+                      fontSize: isTablet ? 16.0 : 14.0,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: isTablet ? 24.0 : 16.0),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiValidationTab(bool isTablet) {
+    final canSubmit = _hasAllSideImages;
+    final submitColor = canSubmit ? _getSubmitButtonColor() : Colors.grey;
+    final uploadedCount = _sideImages.values.where((f) => f != null).length;
+    final _FrameSide? firstMissingSide = _uploadOrder
+        .cast<_FrameSide?>()
+        .firstWhere((s) => s != null && _sideImages[s] == null, orElse: () => null);
+
+    return Container(
+      color: AppColors.white,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'AI Validation',
+                              style: TextStyle(
+                  fontSize: isTablet ? 18.0 : 16.0,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            SizedBox(height: isTablet ? 10.0 : 8.0),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Upload all sides images, then validate and publish.',
+                style: TextStyle(
+                  fontSize: isTablet ? 14.0 : 12.0,
+                  color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                     
-                    SizedBox(height: isTablet ? 20.0 : 16.0),
-                    
-                    // Upload/Remove Button
-                    GestureDetector(
-                      onTap: _selectedImagePath != null ? _removeImage : _selectImage,
+            SizedBox(height: isTablet ? 16.0 : 12.0),
+
+            // Multi-image side uploader (thumbnail column + big preview)
+                      Container(
+                        width: double.infinity,
+              padding: EdgeInsets.all(isTablet ? 16.0 : 12.0),
+                        decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                  color: AppColors.border,
+                  width: 1,
+                          ),
+                        ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                  // Thumbnails column
+                  Column(
+                    children: [
+                      for (final side in _FrameSide.values) ...[
+                        _buildSideThumbnail(side, isTablet),
+                        if (side != _FrameSide.values.last) const SizedBox(height: 12),
+                      ],
+                    ],
+                  ),
+                  SizedBox(width: isTablet ? 16.0 : 12.0),
+                  // Main preview
+                  Expanded(
+                                            child: Column(
+                      children: [
+                        _buildMainSidePreview(isTablet),
+                        SizedBox(height: isTablet ? 10.0 : 8.0),
+                        Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                            if (uploadedCount == _FrameSide.values.length) ...[
+                              const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                              const SizedBox(width: 6),
+                            ],
+                                                Text(
+                              '$uploadedCount/${_FrameSide.values.length} Sides',
+                                                  style: TextStyle(
+                                                    color: AppColors.textSecondary,
+                                fontSize: isTablet ? 13.0 : 12.0,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                        if (!_hasAllSideImages) ...[
+                          SizedBox(height: isTablet ? 8.0 : 6.0),
+                                                Text(
+                            'Upload all sides before validation',
+                                                  style: TextStyle(
+                              color: Colors.red,
+                              fontSize: isTablet ? 12.0 : 11.0,
+                              fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                        ],
+                                              ],
+                                            ),
+                                          ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: isTablet ? 22.0 : 16.0),
+
+            // Action button:
+            // - Show "Upload Image" until all sides are uploaded
+            // - Show "AI Validation" (and later "Publish") once all sides exist
+            SizedBox(
+              width: double.infinity,
+              child: !canSubmit
+                  ? GestureDetector(
+                      onTap: (_isLoading || _isValidating)
+                          ? null
+                          : () {
+                              final sideToPick = uploadedCount == 0
+                                  ? _FrameSide.front
+                                  : (firstMissingSide ?? _activeSide);
+                              setState(() => _activeSide = sideToPick);
+                              _pickImageForSide(ImageSource.gallery, sideToPick);
+                            },
+                      onLongPress: (_isLoading || _isValidating)
+                          ? null
+                          : () {
+                              final sideToPick = uploadedCount == 0
+                                  ? _FrameSide.front
+                                  : (firstMissingSide ?? _activeSide);
+                              setState(() => _activeSide = sideToPick);
+                              _showImageSourceDialog(sideToPick);
+                            },
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: isTablet ? 20.0 : 16.0,
-                          vertical: isTablet ? 10.0 : 8.0,
+                          horizontal: isTablet ? 32.0 : 24.0,
+                          vertical: isTablet ? 18.0 : 16.0,
                         ),
-                        decoration: BoxDecoration(
-                          color: _selectedImagePath != null ? Colors.red : AppColors.primary,
-                          borderRadius: BorderRadius.circular(8),
+                                  decoration: BoxDecoration(
+                          color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: (_selectedImagePath != null ? Colors.red : AppColors.primary).withOpacity(0.3),
+                              color: AppColors.primary.withOpacity(0.25),
                               blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
+                              offset: const Offset(0, 2),
+                                  ),
                           ],
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _selectedImagePath != null ? Icons.delete : Icons.add_photo_alternate,
-                              color: Colors.white,
-                              size: isTablet ? 20.0 : 18.0,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              _selectedImagePath != null ? 'Remove' : 'Select Image',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    // Selected Image Preview
-                    if (_selectedImagePath != null) ...[
-                      SizedBox(height: isTablet ? 20.0 : 16.0),
-                      Container(
-                        width: double.infinity,
-                        height: isTablet ? 200.0 : 150.0,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: _getValidationBorderColor(),
-                            width: 2,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Stack(
-                            children: [
-                              _selectedImageFile != null
-                                  ? Image.file(
-                                      _selectedImageFile!,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          color: AppColors.primary.withOpacity(0.1),
-                                          child: Center(
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.error_outline,
-                                                  size: 40,
-                                                  color: AppColors.primary,
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  'Failed to load image',
-                                                  style: TextStyle(
-                                                    color: AppColors.textSecondary,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    )
-                                  : Image.asset(
-                                      _selectedImagePath!,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          color: AppColors.primary.withOpacity(0.1),
-                                          child: Center(
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.error_outline,
-                                                  size: 40,
-                                                  color: AppColors.primary,
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  'Image not found',
-                                                  style: TextStyle(
-                                                    color: AppColors.textSecondary,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                              // Validation status overlay
-                              if (_isValidating || _validationMessage != null)
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.7),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        if (_isValidating) ...[
-                                          CircularProgressIndicator(
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                            strokeWidth: 2.0,
-                                          ),
-                                          SizedBox(height: 12),
-                                        ],
+                            const Icon(Icons.cloud_upload, color: Colors.white, size: 18),
+                            const SizedBox(width: 10),
                                         Text(
-                                          _validationMessage ?? 'Validating...',
+                              'Upload Image',
                                           style: TextStyle(
-                                            color: _lastValidationResult != null && _lastValidationResult!.isAccepted 
-                                                ? Color(0xFF1E884A)
-                                                : _isLowConfidenceRejection 
-                                                    ? Colors.red
-                                                    : Colors.white,
+                                color: Colors.white,
                                             fontSize: isTablet ? 16.0 : 14.0,
                                             fontWeight: FontWeight.w600,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        if (_lastValidationResult != null) ...[
-                                          SizedBox(height: 8),
-                                          Text(
-                                            'AI Detected: ${(_lastValidationResult!.confidence * 100).toInt()}%',
-                                            style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: isTablet ? 14.0 : 12.0,
-                                            ),
-                                          ),
-                                        ],
+                              ),
+                            ),
                                       ],
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              
-              SizedBox(height: isTablet ? 32.0 : 24.0),
-              
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: GestureDetector(
+                    )
+                  : GestureDetector(
                   onTap: (_isLoading || _isValidating) ? null : _submitForm,
                   child: Container(
                     padding: EdgeInsets.symmetric(
@@ -722,13 +814,13 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                       vertical: isTablet ? 18.0 : 16.0,
                     ),
                     decoration: BoxDecoration(
-                      color: _getSubmitButtonColor(),
+                          color: submitColor,
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: _getSubmitButtonColor().withOpacity(0.3),
+                              color: submitColor.withOpacity(0.3),
                           blurRadius: 8,
-                          offset: Offset(0, 2),
+                              offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -789,36 +881,273 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
             ],
           ),
         ),
+    );
+  }
+
+  bool get _hasAllSideImages => _sideImages.values.every((f) => f != null);
+
+  Color _getSideBorderColor(_FrameSide side) {
+    if (_isValidating && _activeSide == side) return Colors.orange;
+    final r = _sideValidation[side];
+    if (r == null) return AppColors.border;
+    final accepted = r.isAccepted && r.confidence >= 0.7;
+    return accepted ? Colors.green : Colors.red;
+  }
+
+  Widget _buildSideThumbnail(_FrameSide side, bool isTablet) {
+    final isActive = _activeSide == side;
+    final file = _sideImages[side];
+    final borderColor = isActive ? Colors.black : AppColors.border;
+    final uploadedCount = _sideImages.values.where((f) => f != null).length;
+
+    return GestureDetector(
+      onTap: () {
+        // First-time rule: fill the big image first (Front), then continue.
+        if (uploadedCount == 0 && side != _FrameSide.front) {
+          setState(() => _activeSide = _FrameSide.front);
+          _pickImageForSide(ImageSource.gallery, _FrameSide.front);
+          return;
+        }
+
+        setState(() => _activeSide = side);
+        if (_sideImages[side] == null) _pickImageForSide(ImageSource.gallery, side);
+      },
+      onLongPress: () {
+        if (uploadedCount == 0 && side != _FrameSide.front) {
+          setState(() => _activeSide = _FrameSide.front);
+          _showImageSourceDialog(_FrameSide.front);
+          return;
+        }
+        setState(() => _activeSide = side);
+        _showImageSourceDialog(side);
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: isTablet ? 78 : 68,
+            height: isTablet ? 78 : 68,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: borderColor,
+                width: isActive ? 2 : 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: file == null
+                  ? Container(
+                      color: AppColors.primary.withOpacity(0.06),
+                      child: Center(
+                        child: Icon(
+                          Icons.add,
+                          color: AppColors.textSecondary,
+                          size: isTablet ? 24 : 22,
+                        ),
+                      ),
+                    )
+                  : Image.file(
+                      file,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: AppColors.primary.withOpacity(0.06),
+                          child: const Center(child: Icon(Icons.broken_image)),
+                        );
+                      },
+                    ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -18,
+            child: Center(
+              child: Text(
+                side.label,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: isTablet ? 12 : 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          // Status dot
+          Positioned(
+            top: -4,
+            right: -4,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: file == null ? Colors.grey.shade400 : _getSideBorderColor(side),
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  void _selectImage() {
-    print('📷 IMAGE SELECTION - User clicked select image button');
-    
-    _showImageSourceDialog();
+  Widget _buildMainSidePreview(bool isTablet) {
+    final file = _sideImages[_activeSide];
+    final uploadedCount = _sideImages.values.where((f) => f != null).length;
+    return Container(
+      width: double.infinity,
+      height: isTablet ? 320 : 240,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: _getSideBorderColor(_activeSide),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: GestureDetector(
+          onTap: (_isValidating || _isLoading)
+              ? null
+              : () {
+                  // First-time rule: big preview must be filled first (Front)
+                  final sideToPick = uploadedCount == 0 ? _FrameSide.front : _activeSide;
+                  setState(() => _activeSide = sideToPick);
+                  if (_sideImages[sideToPick] == null) {
+                    _pickImageForSide(ImageSource.gallery, sideToPick);
+                  }
+                },
+          child: Stack(
+            children: [
+            if (file == null)
+              Container(
+                color: AppColors.primary.withOpacity(0.04),
+                child: Center(
+                  child: Text(
+                    uploadedCount == 0
+                        ? 'Tap here to upload your first image (Front)'
+                        : 'Tap a side to upload (${_activeSide.label})',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: isTablet ? 14 : 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Image.file(
+                file,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+              ),
+
+            // Overlay for validation status
+            if (_isValidating || _validationMessage != null)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.35),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isValidating) ...[
+                          const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.0,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        Text(
+                          _validationMessage ?? 'Validating...',
+                          style: TextStyle(
+                            color: _isLowConfidenceRejection ? Colors.red : Colors.white,
+                            fontSize: isTablet ? 16.0 : 14.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // Actions (replace/remove) when there is an image
+            if (file != null && !_isValidating)
+              Positioned(
+                right: 10,
+                top: 10,
+                child: Row(
+                  children: [
+                    _previewActionChip(
+                      label: 'Replace',
+                      onTap: () => _showImageSourceDialog(_activeSide),
+                      background: Colors.black.withOpacity(0.55),
+                    ),
+                    const SizedBox(width: 8),
+                    _previewActionChip(
+                      label: 'Remove',
+                      onTap: () => _removeImage(_activeSide),
+                      background: Colors.red.withOpacity(0.75),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  void _removeImage() {
-    print('🗑️ IMAGE REMOVAL - User clicked remove image button');
+  Widget _previewActionChip({
+    required String label,
+    required VoidCallback onTap,
+    required Color background,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _removeImage(_FrameSide side) {
+    print('🗑️ IMAGE REMOVAL - Removing image for side: ${side.label}');
     
     setState(() {
-      _selectedImageFile = null;
-      _selectedImagePath = null;
+      _sideImages[side] = null;
+      _sideValidation[side] = null;
       _validationMessage = null;
-      _lastValidationResult = null;
       _isLowConfidenceRejection = false;
+      if (_activeSide == side) {
+        // keep active side, but preview will show placeholder
+      }
     });
-    
-    print('🧹 STATE CLEARED - Image and validation results removed');
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Image removed successfully'),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 
 
@@ -845,6 +1174,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
+              cursorColor: Colors.black,
               decoration: InputDecoration(
                 hintText: 'Enter description for your flame...',
                 hintStyle: TextStyle(
@@ -854,21 +1184,21 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(
-                    color: AppColors.border,
+                    color: Colors.black,
                     width: 1,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(
-                    color: AppColors.border,
+                    color: Colors.black,
                     width: 1,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(
-                    color: AppColors.primary,
+                    color: Colors.black,
                     width: 2,
                   ),
                 ),
@@ -876,7 +1206,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
               ),
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textPrimary,
+                color: Colors.black,
               ),
             ),
           ),
@@ -916,7 +1246,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
     );
   }
 
-  void _showImageSourceDialog() {
+  void _showImageSourceDialog(_FrameSide side) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -945,7 +1275,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
+                  _pickImageForSide(ImageSource.gallery, side);
                 },
               ),
               // Camera Option
@@ -961,7 +1291,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
+                  _pickImageForSide(ImageSource.camera, side);
                 },
               ),
             ],
@@ -986,9 +1316,10 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
     );
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImageForSide(ImageSource source, _FrameSide side) async {
     try {
-      print('📷 PICKING IMAGE - Source: ${source == ImageSource.camera ? "Camera" : "Gallery"}');
+      print('📷 PICKING IMAGE - Side: ${side.label} Source: ${source == ImageSource.camera ? "Camera" : "Gallery"}');
+      final previouslyUploadedCount = _sideImages.values.where((f) => f != null).length;
       
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1009,10 +1340,15 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
           
           if (fileSize > 0) {
         setState(() {
-              _selectedImageFile = imageFile;
-          _selectedImagePath = image.path;
+              _sideImages[side] = imageFile;
+              _sideValidation[side] = null;
+              // If this is the first image (Front), move user to "Top" next.
+              if (previouslyUploadedCount == 0 && side == _FrameSide.front && _sideImages[_FrameSide.top] == null) {
+                _activeSide = _FrameSide.top;
+              } else {
+                _activeSide = side;
+              }
           _validationMessage = null; // Clear previous validation message
-          _lastValidationResult = null; // Clear previous validation result
           _isLowConfidenceRejection = false;
         });
         
@@ -1038,10 +1374,9 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
       print('💥 IMAGE PICKING ERROR - ${e.toString()}');
       
       setState(() {
-        _selectedImageFile = null;
-        _selectedImagePath = null;
+        _sideImages[side] = null;
+        _sideValidation[side] = null;
         _validationMessage = null;
-        _lastValidationResult = null;
         _isLowConfidenceRejection = false;
       });
       
@@ -1058,11 +1393,21 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
   void _submitForm() async {
     print('🔵 SUBMIT BUTTON CLICKED - Starting form submission');
     
-    if (_selectedImagePath == null) {
-      print('❌ SUBMIT ERROR - No image selected');
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      setState(() {
+        _autovalidateMode = AutovalidateMode.always;
+      });
+      final tabController = _tabsContext != null ? DefaultTabController.maybeOf(_tabsContext!) : null;
+      tabController?.animateTo(0);
+      return;
+    }
+    
+    if (!_hasAllSideImages) {
+      print('❌ SUBMIT ERROR - Missing side images');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select an image first'),
+          content: Text('Please upload all sides images first'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
@@ -1070,7 +1415,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
       return;
     }
 
-    print('✅ SUBMIT VALIDATION - Image path: $_selectedImagePath');
+    print('✅ SUBMIT VALIDATION - All side images selected');
     print('✅ COMMISSION - Rate: 5%');
     print('🚀 SUBMIT PROCESS - Starting AI validation...');
     
@@ -1079,13 +1424,13 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
   }
 
   Future<void> _validateSunglasses() async {
-    if (_selectedImagePath == null) return;
+    if (!_hasAllSideImages) return;
 
     print('🔍 VALIDATION START - Beginning sunglasses validation process');
     
     setState(() {
       _isValidating = true;
-      _validationMessage = 'AI validating image...';
+      _validationMessage = 'AI validating images...';
     });
 
     try {
@@ -1103,61 +1448,56 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
         );
       }
 
-      print('📁 FILE CHECK - Using selected image file: $_selectedImagePath');
-      
-      // Use the selected image file
-      final imageFile = _selectedImageFile ?? File(_selectedImagePath!);
-      
-      print('🤖 AI VALIDATION - Sending request to sunglasses validation API...');
-      
-      // Try file upload first, fallback to base64 if it fails
+      final sides = _FrameSide.values;
+      for (int i = 0; i < sides.length; i++) {
+        final side = sides[i];
+        final imageFile = _sideImages[side];
+        if (imageFile == null) continue;
+
+        setState(() {
+          _activeSide = side;
+          _validationMessage = 'Validating ${side.label} (${i + 1}/${sides.length})...';
+          _isLowConfidenceRejection = false;
+        });
+
+        print('📁 FILE CHECK - Side: ${side.label} File: ${imageFile.path}');
+        print('🤖 AI VALIDATION - Sending request for side: ${side.label}');
+
       SunglassesValidationResult validationResult;
       try {
         validationResult = await SunglassesValidationService.validateSunglassesFromFile(imageFile);
       } catch (e) {
-        print('🔄 FALLBACK - File upload failed, trying base64 encoding: ${e.toString()}');
-        // Fallback to base64 encoding
+          print('🔄 FALLBACK - File upload failed for ${side.label}, trying base64: ${e.toString()}');
         final imageBytes = await imageFile.readAsBytes();
         validationResult = await SunglassesValidationService.validateSunglassesFromBytes(imageBytes);
       }
       
-      print('📊 VALIDATION RESULT - Received response from API');
-      print('   - Status: ${validationResult.isAccepted ? "ACCEPTED" : "REJECTED"}');
-      print('   - Confidence: ${(validationResult.confidence * 100).toStringAsFixed(1)}%');
-      print('   - Message: ${validationResult.message}');
-      print('   - Details: ${validationResult.details}');
-      
-      // Override isAccepted if confidence is below 70%
-      final bool isActuallyAccepted = validationResult.isAccepted && validationResult.confidence >= 0.7;
-      
-      if (!isActuallyAccepted && validationResult.isAccepted) {
-        print('⚠️ CONFIDENCE CHECK - Validation accepted but confidence below 70%, overriding to rejected');
-      }
+        setState(() {
+          _sideValidation[side] = validationResult;
+        });
+
+        final bool accepted = validationResult.isAccepted && validationResult.confidence >= 0.7;
+        if (!accepted) {
+          final msg = (validationResult.isAccepted && validationResult.confidence < 0.7)
+              ? 'Confidence too low on ${side.label} (${(validationResult.confidence * 100).toInt()}%). Try clearer image.'
+              : validationResult.message;
       
       setState(() {
-        _lastValidationResult = validationResult;
         _isValidating = false;
-
-      if (isActuallyAccepted) {
-          print('✅ VALIDATION SUCCESS - Sunglasses detected with confidence >= 70%, staying on current screen');
-          _validationMessage = 'Flame image validated';
-          _isLowConfidenceRejection = false;
-      } else {
-          print('❌ VALIDATION FAILED - Confidence below 70% or no sunglasses detected, showing rejection message');
-          if (validationResult.isAccepted && validationResult.confidence < 0.7) {
-            _validationMessage = 'Confidence too low (${(validationResult.confidence * 100).toInt()}%). Please try a clearer image.';
+            _validationMessage = msg;
             _isLowConfidenceRejection = true;
-          } else {
-            _validationMessage = validationResult.message;
-            _isLowConfidenceRejection = false;
-          }
-        }
       });
 
-      if (!isActuallyAccepted) {
-        // No sunglasses detected or confidence too low - show rejection (not error)
         _showValidationRejection(validationResult);
+          return;
+        }
       }
+
+      setState(() {
+        _isValidating = false;
+        _validationMessage = 'All sides validated';
+        _isLowConfidenceRejection = false;
+      });
 
     } catch (e) {
       print('💥 VALIDATION ERROR - Exception occurred during validation');
@@ -1209,7 +1549,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
             print('🔄 TRY AGAIN CLICKED - User requested retry, clearing validation state');
             setState(() {
               _validationMessage = null;
-              _lastValidationResult = null;
+              _sideValidation[_activeSide] = null;
               _isLowConfidenceRejection = false;
             });
           },
@@ -1254,7 +1594,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
             print('🔄 RETRY CLICKED - User requested retry, clearing validation state');
             setState(() {
             _validationMessage = null;
-            _lastValidationResult = null;
+            _sideValidation[_activeSide] = null;
             });
           },
         ),
@@ -1262,24 +1602,15 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
     );
   }
 
-  /// Returns the appropriate border color based on validation status
-  Color _getValidationBorderColor() {
-    if (_isValidating) {
-      return Colors.orange;
-    } else if (_lastValidationResult != null) {
-      return _lastValidationResult!.isAccepted ? Colors.green : Colors.red;
-    } else {
-      return AppColors.border;
-    }
-  }
-
   /// Returns the appropriate submit button color based on state
   Color _getSubmitButtonColor() {
     if (_isLoading || _isValidating) {
       return AppColors.darkGreen.withOpacity(0.6);
-    } else if (_lastValidationResult != null && _lastValidationResult!.isAccepted && _lastValidationResult!.confidence >= 0.7) {
+    } else if (_hasAllSideImages &&
+        _sideValidation.values.whereType<SunglassesValidationResult>().length == _FrameSide.values.length &&
+        _sideValidation.values.whereType<SunglassesValidationResult>().every((r) => r.isAccepted && r.confidence >= 0.7)) {
       return AppColors.darkGreen;
-    } else if (_lastValidationResult != null && (!_lastValidationResult!.isAccepted || _lastValidationResult!.confidence < 0.7)) {
+    } else if (_sideValidation.values.whereType<SunglassesValidationResult>().any((r) => !r.isAccepted || r.confidence < 0.7)) {
       return Colors.grey;
     } else {
       return AppColors.darkGreen;
@@ -1336,7 +1667,7 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
           ),
         ],
       );
-    } else if (_lastValidationResult != null && !_lastValidationResult!.isAccepted) {
+    } else if (_sideValidation.values.whereType<SunglassesValidationResult>().any((r) => !r.isAccepted || r.confidence < 0.7)) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -1356,7 +1687,9 @@ class _ProductRegisterScreenState extends State<ProductRegisterScreen> {
           ),
         ],
       );
-    } else if (_lastValidationResult != null && _lastValidationResult!.isAccepted && _lastValidationResult!.confidence >= 0.7) {
+    } else if (_hasAllSideImages &&
+        _sideValidation.values.whereType<SunglassesValidationResult>().length == _FrameSide.values.length &&
+        _sideValidation.values.whereType<SunglassesValidationResult>().every((r) => r.isAccepted && r.confidence >= 0.7)) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

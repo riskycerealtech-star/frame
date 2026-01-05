@@ -5,11 +5,13 @@ import '../../constants/routes.dart';
 class BottomNavigationBarWidget extends StatefulWidget {
   final int currentIndex;
   final Function(int)? onTap;
+  final int cartBadgeCount;
 
   const BottomNavigationBarWidget({
     super.key,
     this.currentIndex = 0,
     this.onTap,
+    this.cartBadgeCount = 0,
   });
 
   @override
@@ -39,10 +41,16 @@ class _BottomNavigationBarWidgetState extends State<BottomNavigationBarWidget> {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? Colors.black : const Color(0xFF8AC1ED);
+    final fg = isDark ? Colors.white : Colors.black;
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF8AC1ED),
+        color: bg,
+        border: const Border(
+          top: BorderSide(color: Colors.white, width: 1),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -66,9 +74,17 @@ class _BottomNavigationBarWidgetState extends State<BottomNavigationBarWidget> {
           }
         },
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF8AC1ED),
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black,
+        backgroundColor: bg,
+        selectedItemColor: fg,
+        unselectedItemColor: fg,
+        selectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: isTablet ? 12.0 : 10.0,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.normal,
+          fontSize: isTablet ? 10.0 : 9.0,
+        ),
         selectedFontSize: isTablet ? 12.0 : 10.0,
         unselectedFontSize: isTablet ? 10.0 : 9.0,
         elevation: 0,
@@ -82,15 +98,40 @@ class _BottomNavigationBarWidgetState extends State<BottomNavigationBarWidget> {
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              _currentIndex == 1 ? Icons.explore : Icons.explore_outlined,
+              _currentIndex == 1 ? Icons.storefront : Icons.storefront_outlined,
               size: isTablet ? 24.0 : 22.0,
             ),
-            label: 'Explore',
+            label: 'Market',
           ),
           BottomNavigationBarItem(
-            icon: Icon(
-              _currentIndex == 2 ? Icons.shopping_cart : Icons.shopping_cart_outlined,
-              size: isTablet ? 24.0 : 22.0,
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  _currentIndex == 2 ? Icons.shopping_cart : Icons.shopping_cart_outlined,
+                  size: isTablet ? 24.0 : 22.0,
+                ),
+                if (widget.cartBadgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${widget.cartBadgeCount}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isTablet ? 10.0 : 9.0,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             label: 'Cart',
           ),
@@ -99,7 +140,7 @@ class _BottomNavigationBarWidgetState extends State<BottomNavigationBarWidget> {
               _currentIndex == 3 ? Icons.add : Icons.add_outlined,
               size: isTablet ? 24.0 : 22.0,
             ),
-            label: 'Add',
+            label: 'Sell',
           ),
           BottomNavigationBarItem(
             icon: Icon(
@@ -120,15 +161,15 @@ class _BottomNavigationBarWidgetState extends State<BottomNavigationBarWidget> {
         AppRouter.pushReplacementNamed(context, AppRoutes.home);
         break;
       case 1:
-        // Explore
-        AppRouter.pushNamed(context, AppRoutes.marketplace);
+        // Market
+        AppRouter.pushNamed(context, AppRoutes.myMarket);
         break;
       case 2:
         // Cart
-        // Handle cart navigation - you can implement this
+        AppRouter.pushNamed(context, AppRoutes.cart);
         break;
       case 3:
-        // Add
+        // Sell
         AppRouter.pushNamed(context, AppRoutes.productRegister);
         break;
       case 4:
@@ -144,10 +185,12 @@ class BottomNavHelper {
   static Widget build({
     int currentIndex = 0,
     Function(int)? onTap,
+    int cartBadgeCount = 0,
   }) {
     return BottomNavigationBarWidget(
       currentIndex: currentIndex,
       onTap: onTap,
+      cartBadgeCount: cartBadgeCount,
     );
   }
 }
