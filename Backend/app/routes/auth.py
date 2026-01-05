@@ -4,70 +4,204 @@ Authentication endpoints
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from datetime import datetime, timedelta
 from app.db.session import get_db
-from app.schemas.user import UserCreate, UserResponse, Token
+from app.schemas.user import (
+    UserCreate, UserResponse, Token, LoginRequest, 
+    RefreshTokenRequest, UserSignupRequest, UserSignupResponse
+)
 from app.services.user_service import UserService
-from app.core.security import create_access_token, verify_password
+from app.services.refresh_token_service import RefreshTokenService
+from app.core.security import (
+    create_access_token, verify_password, validate_password
+)
 from app.api.v1.dependencies import get_current_user
-from datetime import timedelta
-
-
-class LoginRequest(BaseModel):
-    """Login request schema"""
-    username: str
-    password: str
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
 
 
-@router.post("/register", response_model=UserResponse, summary="Create new account")
-async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user"""
+@router.post(
+    "/register",
+    response_model=UserSignupResponse,
+    summary="Create new account",
+    description="""
+    Register a new user with all signup fields matching the mobile app signup screen.
+    
+    **Required Fields:**
+    - `email`: Valid email address
+    - `firstName`: First name (minimum 2 characters)
+    - `lastName`: Last name (minimum 2 characters)
+    - `phoneNumber`: Phone number starting with + (e.g., +1234567890)
+    - `password`: Password meeting security requirements
+    - `rePassword`: Re-enter password (must match password)
+    - `gender`: Must be "Male", "Female", or "N/A"
+    - `location`: User's location
+    
+    **Password Requirements:**
+    - Minimum 8 characters
+    - At least one uppercase letter (A-Z)
+    - At least one lowercase letter (a-z)
+    - At least one number (0-9)
+    
+    **Optional Fields:**
+    - `occupation`: User's occupation
+    - `sourceOfFunds`: Source of funds
+    - `additionalProperties`: Additional user properties
+    - `timezone`: User's timezone
+    
+    Returns user ID, email, phone number, and status upon successful registration.
+    """
+)
+async def register(user_data: UserSignupRequest, db: Session = Depends(get_db)):
+    """
+    Register a new user with all signup fields.
+    """
     user_service = UserService(db)
     
-    # Check if user already exists
-    if user_service.get_user_by_email(user_data.email):
+    # Validate password strength
+    is_valid, error_msg = validate_password(user_data.password)
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail=error_msg
         )
     
-    if user_service.get_user_by_username(user_data.username):
+    try:
+        # Create user using signup_user method (includes duplicate checks)
+        result = user_service.signup_user(user_data)
+        return result
+    except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already taken"
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
         )
-    
-    # Create user
-    user = user_service.create_user(user_data)
-    return user
 
 
 @router.post("/login", response_model=Token, summary="Login and get access token")
 async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
-    """Login user and return access token"""
+    """
+    Login user with email/phone and password.
+    Returns access token (24 hours) and refresh token (7 days).
+    Supports email or phone number as username.
+    """
     user_service = UserService(db)
+    refresh_token_service = RefreshTokenService(db)
     
-    # Authenticate user
+    # Authenticate user (supports email or phone number)
     user = user_service.authenticate_user(login_data.username, login_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email/phone or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Create access token
-    access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(
-        data={"sub": str(user.id)}, expires_delta=access_token_expires
-    )
+    # Update last login
+    user.last_login = datetime.utcnow()
+    db.commit()
+    
+    # Create access token (24 hours - configured in settings)
+    access_token = create_access_token(subject=str(user.id))
+    
+    # Create refresh token (7 days)
+    refresh_token_obj = refresh_token_service.create_refresh_token(user.id)
     
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token_obj.token,
         "token_type": "bearer"
+    }
+
+
+@router.post("/refresh", response_model=Token, summary="Refresh access token")
+async def refresh_token(
+    refresh_data: RefreshTokenRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh access token using refresh token.
+    Returns new access token and refresh token.
+    """
+    refresh_token_service = RefreshTokenService(db)
+    user_service = UserService(db)
+    
+    # Validate refresh token
+    if not refresh_token_service.is_token_valid(refresh_data.refresh_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Get refresh token object
+    refresh_token_obj = refresh_token_service.get_refresh_token(refresh_data.refresh_token)
+    if not refresh_token_obj:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found",
+        )
+    
+    # Get user
+    user = user_service.get_user_by_id(refresh_token_obj.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    
+    # Revoke old refresh token
+    refresh_token_service.revoke_token(refresh_data.refresh_token)
+    
+    # Create new access token
+    access_token = create_access_token(subject=str(user.id))
+    
+    # Create new refresh token
+    new_refresh_token_obj = refresh_token_service.create_refresh_token(user.id)
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": new_refresh_token_obj.token,
+        "token_type": "bearer"
+    }
+
+
+@router.post("/logout", summary="Logout and revoke tokens")
+async def logout(
+    refresh_data: RefreshTokenRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Logout user and revoke refresh token.
+    Optionally revoke all user tokens.
+    """
+    refresh_token_service = RefreshTokenService(db)
+    
+    # Revoke the provided refresh token
+    if refresh_token_service.revoke_token(refresh_data.refresh_token):
+        return {"message": "Logged out successfully"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid refresh token"
+        )
+
+
+@router.post("/logout-all", summary="Logout from all devices")
+async def logout_all(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Logout user from all devices by revoking all refresh tokens.
+    """
+    refresh_token_service = RefreshTokenService(db)
+    count = refresh_token_service.revoke_all_user_tokens(current_user.id)
+    
+    return {
+        "message": f"Logged out from {count} device(s)",
+        "revoked_tokens": count
     }
 
 

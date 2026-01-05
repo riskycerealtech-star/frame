@@ -58,8 +58,21 @@ class UserService:
         return db_user
     
     def authenticate_user(self, username: str, password: str) -> Optional[User]:
-        """Authenticate user with username/email and password"""
-        user = self.get_user_by_username(username) or self.get_user_by_email(username)
+        """
+        Authenticate user with username/email/phone and password.
+        Supports email, username, or phone number as identifier.
+        """
+        # Try username first
+        user = self.get_user_by_username(username)
+        
+        # Try email if username not found
+        if not user:
+            user = self.get_user_by_email(username)
+        
+        # Try phone number if email not found
+        if not user:
+            user = self.db.query(User).filter(User.phone_number == username).first()
+        
         if not user:
             return None
         if not verify_password(password, user.hashed_password):

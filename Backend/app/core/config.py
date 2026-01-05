@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     
     # Security Settings
     SECRET_KEY: str = "your-secret-key-change-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours (1440 minutes)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # 7 days
     ALGORITHM: str = "HS256"
     
     # CORS Settings
@@ -46,8 +47,8 @@ class Settings(BaseSettings):
     USE_VISION_API: bool = True
     
     # Swagger UI Authentication
-    SWAGGER_CLIENT_ID: str = "frame_api_admin"
-    SWAGGER_CLIENT_SECRET: str = "frame_api_secret_2024"
+    # Set ENABLE_SWAGGER_AUTH=True in .env to protect Swagger documentation with JWT authentication
+    # When enabled, users must login at /v1/auth/swagger-login before accessing /docs routes
     ENABLE_SWAGGER_AUTH: bool = False  # Set to True to enable Swagger authentication
     
     # Logging

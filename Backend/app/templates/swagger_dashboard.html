@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Backend APIs Frame Flea</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .logout-button {
+            padding: 10px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        
+        .logout-button:hover {
+            background: #c82333;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .welcome-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 40px;
+            color: white;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .welcome-card h2 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-card p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h3 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .card-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .user-info {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-info h3 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            width: 150px;
+        }
+        
+        .info-value {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>🚀 {{ project_name }}</h1>
+            <a href="/v1/auth/swagger-logout" class="logout-button">Logout</a>
+        </div>
+        
+        <div class="welcome-card">
+            <h2>Welcome back, {{ user.first_name or user.username }}! 👋</h2>
+            <p>You're successfully authenticated. Access the API documentation below.</p>
+        </div>
+        
+        <div class="cards-grid">
+            <div class="card">
+                <h3>📚 API Documentation</h3>
+                <p>Explore the complete API documentation with interactive Swagger UI. Test endpoints, view schemas, and understand the API structure.</p>
+                <a href="/docs/frame/swagger-ui/index.html" class="card-button">Open Swagger UI</a>
+            </div>
+            
+            <div class="card">
+                <h3>📖 ReDoc Documentation</h3>
+                <p>View the API documentation in a clean, readable format with ReDoc. Perfect for understanding API structure and endpoints.</p>
+                <a href="/docs/frame/redoc/index.html" class="card-button">Open ReDoc</a>
+            </div>
+            
+            <div class="card">
+                <h3>🔑 API Access</h3>
+                <p>Your access token is valid for 24 hours. Use the Authorization header with "Bearer &lt;token&gt;" to access protected endpoints.</p>
+                <a href="/docs/frame/openapi.json" class="card-button">View OpenAPI Spec</a>
+            </div>
+        </div>
+        
+        <div class="user-info">
+            <h3>👤 Your Profile</h3>
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">{{ user.email }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Username:</span>
+                <span class="info-value">{{ user.username }}</span>
+            </div>
+            {% if user.full_name %}
+            <div class="info-row">
+                <span class="info-label">Full Name:</span>
+                <span class="info-value">{{ user.full_name }}</span>
+            </div>
+            {% endif %}
+            {% if user.phone_number %}
+            <div class="info-row">
+                <span class="info-label">Phone:</span>
+                <span class="info-value">{{ user.phone_number }}</span>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <span class="info-label">Account Status:</span>
+                <span class="info-value">
+                    {% if user.is_admin %}Admin{% elif user.is_seller %}Seller{% else %}User{% endif %}
+                </span>
+            </div>
+            {% if user.last_login %}
+            <div class="info-row">
+                <span class="info-label">Last Login:</span>
+                <span class="info-value">{{ user.last_login.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
+

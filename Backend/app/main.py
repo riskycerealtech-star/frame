@@ -66,7 +66,7 @@ app = FastAPI(
     ],
 )
 
-# CORS middleware
+# CORS middleware (must be first)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
@@ -74,6 +74,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate limiting middleware
+from app.middleware.rate_limit import RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware)
+
+# Swagger authentication middleware (protects /docs routes)
+# Note: Set ENABLE_SWAGGER_AUTH=True in .env to enable
+if settings.ENABLE_SWAGGER_AUTH:
+    from app.middleware.swagger_auth import SwaggerAuthMiddleware
+    app.add_middleware(SwaggerAuthMiddleware)
 
 # Exception handlers
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -127,9 +137,10 @@ if static_dir.exists():
         print(f"⚠ Warning: Could not mount static files: {e}")
 
 # Include routers
-from app.routes import auth, users, products, orders, ai_validation, frame
+from app.routes import auth, users, products, orders, ai_validation, frame, swagger_auth
 
 app.include_router(auth.router, prefix="/v1/auth", tags=["1. User Signup"])
+app.include_router(swagger_auth.router, prefix="/v1/auth", tags=["1. User Signup"])
 app.include_router(users.router, prefix="/v1/auth", tags=["1. User Signup"])
 app.include_router(products.router, prefix="/v1/products", tags=["Products"])
 app.include_router(orders.router, prefix="/v1/orders", tags=["Orders"])

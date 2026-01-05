@@ -1,6 +1,8 @@
 """
 Security utilities for authentication and authorization
 """
+import re
+import secrets
 from datetime import datetime, timedelta
 from typing import Any, Union, Optional
 from jose import jwt
@@ -9,6 +11,36 @@ from app.core.config import settings
 
 # Password hashing
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+
+
+def validate_password(password: str) -> tuple[bool, Optional[str]]:
+    """
+    Validate password strength according to security requirements:
+    - Minimum 8 characters
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one number
+    - Special characters recommended
+    
+    Returns: (is_valid, error_message)
+    """
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain at least one uppercase letter"
+    
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain at least one lowercase letter"
+    
+    if not re.search(r'\d', password):
+        return False, "Password must contain at least one number"
+    
+    # Special characters are recommended but not required
+    # if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+    #     return False, "Password must contain at least one special character"
+    
+    return True, None
 
 
 def create_access_token(
@@ -21,9 +53,14 @@ def create_access_token(
         expire = datetime.utcnow() + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
-    to_encode = {"exp": expire, "sub": str(subject)}
+    to_encode = {"exp": expire, "sub": str(subject), "type": "access"}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
+
+
+def create_refresh_token() -> str:
+    """Generate a secure random refresh token"""
+    return secrets.token_urlsafe(32)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
