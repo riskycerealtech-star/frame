@@ -100,6 +100,13 @@ def setup_openapi_schema():
         }
     }
     
+    # Add favicon info to OpenAPI schema (for Swagger UI)
+    if "info" in openapi_schema:
+        openapi_schema["info"]["x-logo"] = {
+            "url": "/favicon.ico",
+            "altText": "Frame Flea Logo"
+        }
+    
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
