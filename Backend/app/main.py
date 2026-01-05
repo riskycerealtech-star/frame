@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.database import Base, engine
@@ -29,6 +30,9 @@ def init_db():
 
 # Try to initialize database, but don't fail if it's not available
 init_db()
+
+# Get base directory for static files (needed for favicon)
+base_dir = Path(__file__).resolve().parent.parent
 
 # FastAPI app configuration
 app = FastAPI(
@@ -112,6 +116,16 @@ def setup_openapi_schema():
 
 app.openapi = setup_openapi_schema
 
+# Mount static files directory for favicon and other static assets
+# Note: Mount this BEFORE including routers to ensure proper route precedence
+static_dir = base_dir / "static"
+if static_dir.exists():
+    try:
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+        print(f"✓ Static files mounted from: {static_dir}")
+    except Exception as e:
+        print(f"⚠ Warning: Could not mount static files: {e}")
+
 # Include routers
 from app.routes import auth, users, products, orders, ai_validation, frame
 
@@ -121,6 +135,16 @@ app.include_router(products.router, prefix="/v1/products", tags=["Products"])
 app.include_router(orders.router, prefix="/v1/orders", tags=["Orders"])
 app.include_router(ai_validation.router, prefix="/v1", tags=["2. Flame Flow"])
 app.include_router(frame.router, prefix="/v1/frame", tags=["2. Flame Flow"])
+
+# Startup event to verify favicon
+@app.on_event("startup")
+async def startup_event():
+    """Verify favicon exists on startup"""
+    favicon_path = base_dir / "static" / "favicon.ico"
+    if favicon_path.exists():
+        print(f"✓ Favicon found at: {favicon_path}")
+    else:
+        print(f"⚠ Warning: Favicon not found at: {favicon_path}")
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
@@ -141,21 +165,42 @@ async def root():
         "docs": "/docs/frame/swagger-ui/index.html"
     }
 
-# Favicon endpoint - browsers and Swagger UI automatically request this
+# Favicon endpoints - browsers and Swagger UI automatically request these
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     """Serve favicon.ico for browser tabs and Swagger UI"""
-    # Get the path to the static directory (Backend/static/)
-    base_dir = Path(__file__).resolve().parent.parent
     favicon_path = base_dir / "static" / "favicon.ico"
     
     if favicon_path.exists():
         return FileResponse(
             path=str(favicon_path),
             media_type="image/x-icon",
-            headers={"Cache-Control": "public, max-age=31536000"}
+            headers={
+                "Cache-Control": "public, max-age=31536000",
+                "Content-Type": "image/x-icon"
+            }
         )
     else:
         # Return 204 No Content if favicon not found (prevents 404 errors in browser console)
+        from starlette.responses import Response
+        return Response(status_code=204)
+
+# Also serve favicon from docs path (Swagger UI might look here)
+@app.get("/docs/frame/swagger-ui/favicon.ico", include_in_schema=False)
+@app.get("/docs/favicon.ico", include_in_schema=False)
+async def swagger_favicon():
+    """Serve favicon.ico for Swagger UI"""
+    favicon_path = base_dir / "static" / "favicon.ico"
+    
+    if favicon_path.exists():
+        return FileResponse(
+            path=str(favicon_path),
+            media_type="image/x-icon",
+            headers={
+                "Cache-Control": "public, max-age=31536000",
+                "Content-Type": "image/x-icon"
+            }
+        )
+    else:
         from starlette.responses import Response
         return Response(status_code=204)
