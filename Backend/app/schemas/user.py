@@ -20,7 +20,7 @@ class UserSignupRequest(BaseModel):
     User signup request schema - Required fields only.
     
     Required fields:
-    - email, firstName, lastName, phoneNumber, password, rePassword, gender, timezone
+    - email, firstName, lastName, phoneNumber, password, rePassword, gender
     """
     email: EmailStr = Field(
         ...,
@@ -61,11 +61,6 @@ class UserSignupRequest(BaseModel):
         description="Must be 'Male', 'Female', or 'N/A'",
         example="Male"
     )
-    timezone: str = Field(
-        ...,
-        description="User's timezone",
-        example="America/New_York"
-    )
     
     @model_validator(mode='after')
     def passwords_match(self):
@@ -92,8 +87,7 @@ class UserSignupRequest(BaseModel):
                 "phoneNumber": "+1234567890",
                 "password": "SecurePass123",
                 "rePassword": "SecurePass123",
-                "gender": "Male",
-                "timezone": "America/New_York"
+                "gender": "Male"
             }
         }
 

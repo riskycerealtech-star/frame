@@ -114,10 +114,9 @@ class UserService:
         # Create full name
         full_name = f"{signup_data.firstName} {signup_data.lastName}"
         
-        # Build additional_properties with gender and timezone
+        # Build additional_properties with gender
         additional_props = {
-            'gender': signup_data.gender,
-            'timezone': signup_data.timezone
+            'gender': signup_data.gender
         }
         
         # Create user

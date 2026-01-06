@@ -36,7 +36,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
     - `password`: Password meeting security requirements
     - `rePassword`: Re-enter password (must match password)
     - `gender`: Must be "Male", "Female", or "N/A"
-    - `timezone`: User's timezone
     
     **Password Requirements:**
     - Minimum 8 characters
