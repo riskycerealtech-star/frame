@@ -26,7 +26,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
     response_model=UserSignupResponse,
     summary="Create new account",
     description="""
-    Register a new user with all signup fields matching the mobile app signup screen.
+    Register a new user with required signup fields.
     
     **Required Fields:**
     - `email`: Valid email address
@@ -36,19 +36,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
     - `password`: Password meeting security requirements
     - `rePassword`: Re-enter password (must match password)
     - `gender`: Must be "Male", "Female", or "N/A"
-    - `location`: User's location
+    - `timezone`: User's timezone
     
     **Password Requirements:**
     - Minimum 8 characters
     - At least one uppercase letter (A-Z)
     - At least one lowercase letter (a-z)
     - At least one number (0-9)
-    
-    **Optional Fields:**
-    - `occupation`: User's occupation
-    - `sourceOfFunds`: Source of funds
-    - `additionalProperties`: Additional user properties
-    - `timezone`: User's timezone
     
     Returns user ID, email, phone number, and status upon successful registration.
     """

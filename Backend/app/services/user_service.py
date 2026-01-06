@@ -114,12 +114,11 @@ class UserService:
         # Create full name
         full_name = f"{signup_data.firstName} {signup_data.lastName}"
         
-        # Build additional_properties with gender and location
-        additional_props = signup_data.additionalProperties or {}
-        if signup_data.gender:
-            additional_props['gender'] = signup_data.gender
-        if signup_data.location:
-            additional_props['location'] = signup_data.location
+        # Build additional_properties with gender and timezone
+        additional_props = {
+            'gender': signup_data.gender,
+            'timezone': signup_data.timezone
+        }
         
         # Create user
         db_user = User(
@@ -130,8 +129,6 @@ class UserService:
             full_name=full_name,
             phone_number=signup_data.phoneNumber,
             hashed_password=hashed_password,
-            occupation=signup_data.occupation,
-            source_of_funds=signup_data.sourceOfFunds,
             additional_properties=additional_props
         )
         

@@ -2,7 +2,7 @@
 User schemas for request/response models
 """
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-from typing import Optional, Dict, Any
+from typing import Optional
 from datetime import datetime
 
 
@@ -17,73 +17,53 @@ class UserBase(BaseModel):
 
 class UserSignupRequest(BaseModel):
     """
-    User signup request schema - All fields from the signup screen.
+    User signup request schema - Required fields only.
     
-    Required fields match the mobile app signup form:
-    - First Name, Last Name, Gender, Email, Phone Number, Password, Re-Password
+    Required fields:
+    - email, firstName, lastName, phoneNumber, password, rePassword, gender, timezone
     """
     email: EmailStr = Field(
         ...,
-        description="User's email address",
+        description="Valid email address",
         example="john.doe@example.com"
     )
     firstName: str = Field(
         ...,
         min_length=2,
-        description="User's first name (minimum 2 characters)",
+        description="First name (minimum 2 characters)",
         example="John"
     )
     lastName: str = Field(
         ...,
         min_length=2,
-        description="User's last name (minimum 2 characters)",
+        description="Last name (minimum 2 characters)",
         example="Doe"
     )
     phoneNumber: str = Field(
         ...,
-        description="User's phone number (must start with + and have at least 10 digits)",
+        description="Phone number starting with + (e.g., +1234567890)",
         example="+1234567890",
         pattern=r"^\+\d{10,}$"
     )
     password: str = Field(
         ...,
         min_length=8,
-        description="User's password. Must contain: minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number",
+        description="Password meeting security requirements: minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number",
         example="SecurePass123"
     )
     rePassword: str = Field(
         ...,
-        description="Re-enter password for confirmation. Must match the password field.",
+        description="Re-enter password (must match password)",
         example="SecurePass123"
     )
     gender: str = Field(
         ...,
-        description="User's gender. Must be one of: 'Male', 'Female', or 'N/A'",
+        description="Must be 'Male', 'Female', or 'N/A'",
         example="Male"
     )
-    location: str = Field(
+    timezone: str = Field(
         ...,
-        description="User's location",
-        example="New York"
-    )
-    occupation: Optional[str] = Field(
-        None,
-        description="User's occupation (optional)",
-        example="EMPLOYED"
-    )
-    sourceOfFunds: Optional[str] = Field(
-        None,
-        description="Source of funds (optional)",
-        example="SALARY"
-    )
-    additionalProperties: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Additional user properties (optional)",
-        example={"key": "value"}
-    )
-    timezone: Optional[str] = Field(
-        None,
-        description="User's timezone (optional)",
+        description="User's timezone",
         example="America/New_York"
     )
     
@@ -93,6 +73,15 @@ class UserSignupRequest(BaseModel):
         if self.password != self.rePassword:
             raise ValueError('Passwords do not match')
         return self
+    
+    @field_validator('gender')
+    @classmethod
+    def validate_gender(cls, v):
+        """Validate gender is one of the allowed values"""
+        allowed = ['Male', 'Female', 'N/A']
+        if v not in allowed:
+            raise ValueError(f"Gender must be one of: {', '.join(allowed)}")
+        return v
     
     class Config:
         json_schema_extra = {
@@ -104,9 +93,7 @@ class UserSignupRequest(BaseModel):
                 "password": "SecurePass123",
                 "rePassword": "SecurePass123",
                 "gender": "Male",
-                "location": "New York",
-                "occupation": "EMPLOYED",
-                "sourceOfFunds": "SALARY"
+                "timezone": "America/New_York"
             }
         }
 
