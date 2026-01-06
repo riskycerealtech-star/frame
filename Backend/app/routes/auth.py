@@ -2,6 +2,7 @@
 Authentication endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -49,6 +50,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
 async def register(user_data: UserSignupRequest, db: Session = Depends(get_db)):
     """
     Register a new user with all signup fields.
+    Returns user data in body and createdOn/updatedOn in response headers.
     """
     user_service = UserService(db)
     
@@ -63,7 +65,28 @@ async def register(user_data: UserSignupRequest, db: Session = Depends(get_db)):
     try:
         # Create user using signup_user method (includes duplicate checks)
         result = user_service.signup_user(user_data)
-        return result
+        
+        # Extract timestamps for headers
+        created_on = result.get("createdOn", "")
+        updated_on = result.get("updatedOn", "")
+        
+        # Remove timestamps from body (they'll be in headers)
+        response_body = {
+            "status": result["status"],
+            "email": result["email"],
+            "userId": result["userId"],
+            "phoneNumber": result["phoneNumber"]
+        }
+        
+        # Return JSONResponse with timestamps in headers
+        return JSONResponse(
+            content=response_body,
+            status_code=status.HTTP_201_CREATED,
+            headers={
+                "createdOn": created_on,
+                "updatedOn": updated_on
+            }
+        )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
