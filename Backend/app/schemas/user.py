@@ -154,11 +154,92 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class LoginRequest(BaseModel):
+    """
+    Login request schema - supports email, username, or phone number as identifier.
+    """
+    username: str = Field(
+        ...,
+        min_length=1,
+        description="User's email address, username, or phone number",
+        example="user@example.com"
+    )
+    password: str = Field(
+        ...,
+        min_length=8,
+        description="User password",
+        example="SecurePass123"
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "username": "user@example.com",
+                "password": "SecurePass123"
+            }
+        }
+
+
 class RefreshTokenRequest(BaseModel):
     """Refresh token request schema"""
-    refresh_token: str
+    refresh_token: str = Field(
+        ...,
+        description="Refresh token"
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+        }
 
 
 class TokenData(BaseModel):
     """Token data schema"""
     user_id: Optional[int] = None
+
+
+# Additional optional schemas for future use
+class LoginResponse(BaseModel):
+    """Schema for login response"""
+    success: bool
+    message: str
+    access_token: str
+    refresh_token: Optional[str] = None
+    token_type: str = "bearer"
+    user: dict
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "message": "Login successful",
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "user": {
+                    "id": "123e4567-e89b-12d3-a456-426614174000",
+                    "email": "user@example.com",
+                    "username": "john_doe"
+                }
+            }
+        }
+
+
+class TokenVerifyResponse(BaseModel):
+    """Schema for token verification response"""
+    valid: bool
+    user: Optional[dict] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "valid": True,
+                "user": {
+                    "id": "123e4567-e89b-12d3-a456-426614174000",
+                    "email": "user@example.com",
+                    "username": "john_doe"
+                }
+            }
+        }
