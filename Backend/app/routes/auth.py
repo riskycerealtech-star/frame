@@ -44,7 +44,16 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
     - At least one lowercase letter (a-z)
     - At least one number (0-9)
     
-    Returns user ID, email, phone number, and status upon successful registration.
+    **Response Body:**
+    Returns user ID, email, phone number, and status upon successful registration:
+    - `status`: Account creation status
+    - `email`: User's email address
+    - `userId`: Unique user identifier
+    - `phoneNumber`: User's phone number
+    
+    **Response Headers:**
+    - `createdOn`: Timestamp when the account was created (ISO 8601 format, e.g., "2019-10-11T08:00:00Z")
+    - `updatedOn`: Timestamp when the account was last updated (ISO 8601 format, e.g., "2019-10-11T08:00:00Z")
     """
 )
 async def register(user_data: UserSignupRequest, db: Session = Depends(get_db)):
